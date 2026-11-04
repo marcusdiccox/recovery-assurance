@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recovery-assurance"
+version = "0.1.0"
+description = "Evidence-driven recovery drills, integrity verification, and recovery-time reporting."
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "httpx2>=2,<3", "ruff>=0.12,<1", "build>=1,<2"]
+
+[project.scripts]
+recovery-assurance = "recovery_assurance.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["recovery_assurance*"]
+
+[tool.setuptools.package-data]
+recovery_assurance = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

@@ -1,0 +1,4 @@
+include requirements.txt requirements-dev.txt Dockerfile
+recursive-include docs *.md *.png
+recursive-include tests *.py *.mjs
+recursive-include recovery_assurance/static *
