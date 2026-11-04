@@ -1,41 +1,126 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Recovery evidence, integrity checks, and recovery-time reporting.">
-<title>Recovery Assurance · Overview</title><link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" type="module"></script></head>
-<body>
-<a class="skip" href="#main">Skip to overview</a>
-<aside class="sidebar">
-  <a class="brand" href="/" aria-label="Recovery Assurance home"><span class="brandmark">r<span>↗</span></span><span>recovery<span class="brand-sub">ASSURANCE</span></span></a>
-  <div class="workspace"><span class="workspace-icon">M</span><div>Personal workspace<small>Local environment</small></div><span class="online" aria-label="Local environment"></span></div>
-  <p class="nav-label">WORKSPACE</p>
-  <nav aria-label="Primary"><a class="nav-item active" href="#main" aria-current="page"><span>◫</span> Overview</a><a class="nav-item" href="#history"><span>↺</span> Recovery history</a><button class="nav-item" id="method-button"><span>⌘</span> Methodology</button></nav>
-  <div class="sidebar-foot"><div class="scope-label"><span class="online"></span> Evidence, not assumptions.</div><p>Restore. Verify. Understand.</p><span class="version">LOCAL EDITION · v0.1.0</span></div>
-</aside>
-<div class="shell">
-<header class="topbar"><div>Workspace <span class="slash">/</span> <strong>Overview</strong></div><div class="environment"><span class="online"></span> Local workspace <span class="divider"></span><span class="avatar">MD</span></div></header>
-<main id="main">
-  <section class="heading"><div><p class="eyebrow">RECOVERY OPERATIONS</p><h1>Confidence starts with evidence.</h1><p class="subtitle">Know what you can recover. Prove it before you need it.</p></div><button class="primary" id="demo-button"><span aria-hidden="true">＋</span> Run sample drills</button></section>
-  <div id="message" class="message" role="status" aria-live="polite" hidden></div>
-  <section class="context-strip" aria-label="Dataset controls"><div><span class="small-icon">◈</span><strong id="context-title">Recovery evidence</strong><span id="dataset-note">Measured results from your local workspace</span></div><label>Dataset <select id="dataset"><option value="all">All runs</option><option value="live">Your drills</option><option value="sample">Sample drills</option></select></label></section>
-  <section class="metrics" aria-label="Recovery metrics">
-    <article class="metric"><div class="metric-head">Verified recoveries <span>◎</span></div><strong id="passed">—</strong><p id="passed-note">No evidence recorded yet</p></article>
-    <article class="metric"><div class="metric-head">Integrity pass rate <span>◇</span></div><strong id="integrity">—</strong><p>Paths, sizes &amp; SHA-256 verified</p></article>
-    <article class="metric"><div class="metric-head">Median recovery time <span>◷</span></div><strong id="median">—</strong><p>Restore + integrity verification</p></article>
-    <article class="metric"><div class="metric-head">Recovery targets met <span>⚑</span></div><strong id="rto">—</strong><p>Against each drill’s time objective</p></article>
-  </section>
-  <section class="insights">
-    <article class="panel chart-panel"><div class="panel-heading"><div><h2>Recovery performance</h2><p>End-to-end duration of the latest 8 drills</p></div><div class="legend"><i></i> Passed <i class="failed-dot"></i> Failed / error</div></div><div class="chart-wrap" id="chart"><p class="chart-empty">Your recovery timeline will appear here.</p></div></article>
-    <article class="panel evidence-panel"><p class="eyebrow">THE EVIDENCE STANDARD</p><div class="evidence-symbol">✓</div><h2>A backup is a promise.<br>A restore is the proof.</h2><p>Every drill restores files into an isolated directory, checks them against a saved baseline, and measures the time to verified recovery.</p><button class="text-button" id="learn-button">Understand the checks <span>↗</span></button></article>
-  </section>
-  <section class="panel history" id="history"><div class="panel-heading"><div><h2>Recovery history <span id="run-count" class="count">0</span></h2><p>Latest 200 records · newest first</p></div><div class="table-tools"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search drills…" aria-label="Search drills"></label><select id="status" aria-label="Filter by outcome"><option value="all">All outcomes</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="error">Error</option></select></div></div>
-    <div class="table-scroll"><table><thead><tr><th scope="col">DRILL / BASELINE</th><th scope="col">OUTCOME</th><th scope="col">INTEGRITY</th><th scope="col">RECOVERY / TARGET</th><th scope="col">RECORDED</th><th scope="col"><span class="sr-only">Evidence</span></th></tr></thead><tbody id="runs"></tbody></table></div>
-    <div class="empty-state" id="empty"><span>⌁</span><h3>Your first recovery starts here.</h3><p>Run sample drills to explore real checks on synthetic files,<br>or use the CLI to test your own backup snapshots.</p><code>recovery-assurance demo</code></div>
-    <div class="history-foot"><span><span class="online"></span> Stored locally · no external telemetry</span><button class="text-button" id="refresh">Refresh evidence ↻</button></div>
-  </section>
-  <footer>Recovery Assurance <span>Built around a simple question: can you actually restore it?</span></footer>
-</main></div>
-<dialog id="detail"><div class="dialog-heading"><div><p class="eyebrow">RECOVERY EVIDENCE</p><h2 id="detail-title"></h2></div><button class="close" aria-label="Close evidence">×</button></div><div id="detail-body"></div><div class="dialog-foot"><a class="secondary" id="html-export">Download HTML</a><a class="primary" id="json-export">Download JSON ↗</a></div></dialog>
-<dialog id="method"><div class="dialog-heading"><div><p class="eyebrow">METHODOLOGY</p><h2>What a verified recovery means.</h2></div><button class="close" aria-label="Close methodology">×</button></div><div class="method-body"><ol><li><strong>Capture a baseline.</strong> Save relative paths, byte sizes, and SHA-256 hashes from stable source data at backup time.</li><li><strong>Restore into isolation.</strong> Copy a directory snapshot or restore a restic snapshot into a fresh temporary directory.</li><li><strong>Compare every file.</strong> Flag changed, missing, and unexpected files. A matching size alone is never sufficient.</li><li><strong>Measure the objective.</strong> Recovery time includes restore and verification. A run passes only when integrity and its time target both pass.</li><li><strong>Keep the evidence.</strong> Store the result locally and export an inspectable report. Temporary restored files are cleaned up.</li></ol><p class="method-note">Scope: regular-file content and paths. This does not validate application startup, permissions, timestamps, database consistency, or recovery-point objectives. A local file drill does not certify disaster recovery. Sample drills use synthetic files with real measured timings, including one deliberately damaged snapshot and one deliberately impossible 0-second target.</p></div></dialog>
-</body></html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Run backup recovery drills and inspect file integrity and recovery-time results.">
+    <title>Recovery runs · Recovery Assurance</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/app.js" type="module"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to recovery runs</a>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Recovery Assurance home">
+        <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+          <path d="M7 19V9h7a5 5 0 0 1 0 10h-3M17 14h6m-3-3 3 3-3 3"/>
+        </svg>
+        <span>Recovery<span class="brand-subtitle">Assurance</span></span>
+      </a>
+      <div class="workspace"><span class="workspace-mark">L</span><span>Local workspace<small>Single-user edition</small></span></div>
+      <p class="nav-label">Workspace</p>
+      <nav aria-label="Primary">
+        <a class="nav-item active" href="#main" aria-current="page">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 8h14M8 8v9"/></svg>
+          Recovery runs
+        </a>
+        <button class="nav-item" id="method-button">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h9a3 3 0 0 1 3 3v11H6a2 2 0 0 1-2-2zm0 10h12M7 6h6M7 9h4"/></svg>
+          Verification guide
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="source-link" href="https://github.com/marcusdiccox/recovery-assurance" target="_blank" rel="noreferrer">Repository <span aria-hidden="true">↗</span></a>
+        <span class="version">v0.1.0 <span>Local storage</span></span>
+      </div>
+    </aside>
+    <div class="shell">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>Recovery Assurance</span><span aria-hidden="true">/</span><strong>Runs</strong></div>
+        <span class="environment"><span class="status-dot"></span>Local</span>
+      </header>
+      <main id="main">
+        <div class="page-heading">
+          <div><h1>Recovery runs</h1><p>Restore snapshots. Check files. Review the results.</p></div>
+          <div class="page-actions">
+            <button class="button" id="refresh" aria-label="Refresh recovery runs">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4"/></svg>
+              Refresh
+            </button>
+            <button class="button primary" id="demo-button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 9 6-9 6z"/></svg>
+              Run sample drills
+            </button>
+          </div>
+        </div>
+        <div id="message" class="notice" role="status" aria-live="polite" hidden></div>
+        <div class="scope-bar">
+          <div class="dataset-switch" role="group" aria-label="Dataset">
+            <button data-dataset="all" aria-pressed="true">All runs</button>
+            <button data-dataset="live" aria-pressed="false">Your drills</button>
+            <button data-dataset="sample" aria-pressed="false">Samples</button>
+          </div>
+          <span id="dataset-note" class="scope-note">Loading recorded runs…</span>
+        </div>
+        <section class="metrics" aria-label="Dataset summary">
+          <div><span>Verified recoveries</span><strong id="passed">—</strong><small id="passed-note">Integrity and time target</small></div>
+          <div><span>File integrity</span><strong id="integrity">—</strong><small>Paths, sizes, and SHA-256</small></div>
+          <div><span>Median drill time</span><strong id="median">—</strong><small>Completed drills only</small></div>
+          <div><span>Time targets met</span><strong id="rto">—</strong><small>Restore and verification</small></div>
+        </section>
+        <div class="run-workspace">
+          <section class="run-list" aria-labelledby="history-heading">
+            <div class="list-heading"><h2 id="history-heading">Run history <span id="run-count" class="count">0</span></h2><span>Newest first</span></div>
+            <div class="filters">
+              <label class="search-field">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
+                <input id="search" type="search" placeholder="Search name, ID, or backend" aria-label="Search drills">
+                <kbd aria-hidden="true">/</kbd>
+              </label>
+              <label class="sr-only" for="status">Filter by outcome</label>
+              <select id="status"><option value="all">All outcomes</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="error">Error</option></select>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <caption class="sr-only">Recorded recovery runs. Select a run to inspect its evidence.</caption>
+                <thead><tr><th scope="col">Run</th><th scope="col">Outcome</th><th scope="col">Files</th><th scope="col">Duration</th><th scope="col">Recorded</th></tr></thead>
+                <tbody id="runs"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="empty" hidden>
+              <h3 id="empty-heading">No runs recorded</h3>
+              <p id="empty-description">Run sample drills above, or use the CLI to test a backup.</p>
+              <code id="empty-command">recovery-assurance demo</code>
+              <button class="button" id="clear-filters" hidden>Clear filters</button>
+            </div>
+            <div class="list-footer"><span id="visible-count">Loading…</span><span id="updated-at"></span></div>
+          </section>
+          <aside class="inspector" id="inspector" aria-labelledby="inspector-heading" tabindex="-1">
+            <div class="inspector-heading"><h2 id="inspector-heading">Run inspector</h2><span id="inspector-id" class="mono"></span></div>
+            <div id="detail-body"><p class="inspector-placeholder">Select a run to review its evidence.</p></div>
+            <div class="export-actions" id="exports" hidden><a class="button" id="html-export">HTML report</a><a class="button" id="json-export">JSON <span aria-hidden="true">↓</span></a></div>
+          </aside>
+        </div>
+        <section class="recent" aria-labelledby="recent-heading">
+          <div class="list-heading"><h2 id="recent-heading">Recent drill durations</h2><span>Latest 8 in this dataset · oldest to newest</span></div>
+          <div id="recent-runs" class="recent-runs"><p>No completed drills yet.</p></div>
+        </section>
+        <footer><span>Results stored on this computer</span><button id="learn-button" class="text-button">What is checked?</button></footer>
+      </main>
+    </div>
+    <dialog id="method" aria-labelledby="method-title">
+      <div class="dialog-heading"><div><p class="overline">Verification guide</p><h2 id="method-title">How a drill is evaluated</h2></div><button class="icon-button" id="close-method" aria-label="Close verification guide">×</button></div>
+      <div class="method-body">
+        <ol>
+          <li><strong>Capture a baseline.</strong> Save relative paths, byte sizes, and SHA-256 hashes from stable source data at backup time.</li>
+          <li><strong>Restore into isolation.</strong> Copy a directory snapshot or restore a restic snapshot into a fresh temporary directory.</li>
+          <li><strong>Compare every file.</strong> Flag changed, missing, and unexpected files. A matching size alone is insufficient.</li>
+          <li><strong>Check the time target.</strong> Measured time includes restore, verification, and cleanup. A run passes when integrity and its time target both pass.</li>
+          <li><strong>Record the result.</strong> Save evidence locally and export an HTML or JSON report. Temporary restored files are removed.</li>
+        </ol>
+        <div class="scope-box"><h3>Scope of this check</h3><p>Regular-file content and paths. Application startup, permissions, timestamps, database consistency, and recovery-point objectives are not checked.</p><p>Samples use synthetic files with real measured timings. The damaged snapshot and zero-second target deliberately demonstrate failures.</p></div>
+      </div>
+    </dialog>
+  </body>
+</html>

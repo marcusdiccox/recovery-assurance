@@ -5,17 +5,18 @@ This document distinguishes executed checks from configuration and future plans.
 ## Executed locally
 
 - Windows, Python 3.12: **31 Python tests passed**, including an actual restic backup and restore.
-- Node.js: **2 dashboard outcome-summary tests passed**.
+- Node.js: **6 dashboard tests passed**, including combined filters, incomplete timing summaries, empty evidence, and distinct failure reasons.
 - Ruff: lint and formatting checks passed.
 - Built the wheel and source distribution, with dashboard assets included in the wheel.
 - restic **0.19.1**, downloaded from the official release; checksum-verified installer also exercised on Windows.
 - CLI demo: three real drills on 25 synthetic files per drill, with recorded durations and deliberate integrity/time failures.
-- Chrome: desktop overview and file-level evidence dialog inspected. File mismatch, missing file, unexpected file, timing, and report links displayed correctly.
+- Chrome: the original dashboard and evidence dialog were inspected before this redesign. The redesigned history/inspector interface has not yet received a live browser visual check.
 - Independent read-only code review completed. The recursive-copy containment finding, SQLite cleanup, and misleading sample-summary message were fixed and covered by regressions.
+- The interface redesign received a separate read-only review. Its desktop focus and secondary-text contrast findings were corrected; the focus change still requires live keyboard verification.
 
 ## Executed in GitHub Actions
 
-The initial Windows and Ubuntu jobs passed the Python suite, JavaScript tests, Ruff, and package build (run `41762905377`). CI installs a checksum-verified pinned restic release. GitHub Actions results are the authority for each subsequent revision; workflow configuration alone is not execution evidence.
+The preceding release passed Windows and Ubuntu jobs with the Python suite, JavaScript tests, Ruff, and package build (run `41763108831`). The interface redesign has not yet run in GitHub Actions. CI installs a checksum-verified pinned restic release. GitHub Actions results are the authority for each revision; workflow configuration alone is not execution evidence.
 
 ## Not executed / outside this release
 

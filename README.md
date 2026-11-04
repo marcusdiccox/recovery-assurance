@@ -1,8 +1,6 @@
 # Recovery Assurance
 
-**A backup is a promise. A restore is the proof.**
-
-Recovery Assurance runs isolated file-recovery drills, verifies restored content against a saved baseline, measures recovery time, and keeps inspectable evidence. It is the first module of a broader Cloud Operations Center.
+Run isolated file-recovery drills, compare restored content with a saved baseline, and record whether integrity and recovery-time targets passed. Built with Python, FastAPI, SQLite, and plain browser modules.
 
 ## What works today
 
@@ -10,7 +8,7 @@ Recovery Assurance runs isolated file-recovery drills, verifies restored content
 - **Content integrity:** relative paths, byte sizes, and streaming SHA-256; catches same-size corruption, missing files, and unexpected files.
 - **Recovery-time objectives:** separate restore and verification timings, with an end-to-end target that also includes temporary-directory setup and cleanup. A run passes only when both integrity and time pass.
 - **Persistent evidence:** SQLite history, a baseline fingerprint, JSON exports, and standalone HTML reports suitable for printing.
-- **Local operations dashboard:** metrics, measured-duration chart, search, outcome and dataset filters, and per-run evidence.
+- **Local operations dashboard:** a searchable run list, dataset and outcome filters, a persistent evidence inspector, and measured duration comparisons.
 - **Reproducible demo:** creates synthetic files and executes three actual drills: healthy recovery, integrity failure, and a deliberately impossible zero-second target. Timings are measured, never prefilled.
 - **Automation-ready CLI:** exit codes suitable for scheduled tasks and CI.
 
@@ -30,6 +28,8 @@ python -m venv .venv
 ```
 
 Open **http://127.0.0.1:8765**. The dashboard also has a **Run sample drills** button; each click appends three new measured records.
+
+Select a run to inspect its file checks and timings, or download its HTML/JSON report. Press `/` to search. The summary describes the selected dataset; search and outcome filters narrow the history list. See [interface notes and references](docs/interface.md) for the design decisions.
 
 On Linux/macOS, replace `.venv\Scripts\python` with `.venv/bin/python`.
 
