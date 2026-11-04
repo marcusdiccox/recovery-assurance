@@ -13,9 +13,9 @@ This document distinguishes executed checks from configuration and future plans.
 - Chrome: desktop overview and file-level evidence dialog inspected. File mismatch, missing file, unexpected file, timing, and report links displayed correctly.
 - Independent read-only code review completed. The recursive-copy containment finding, SQLite cleanup, and misleading sample-summary message were fixed and covered by regressions.
 
-## Configured for CI
+## Executed in GitHub Actions
 
-Windows and Ubuntu jobs run the Python suite, JavaScript tests, Ruff, and package build. CI installs a checksum-verified pinned restic release. GitHub Actions results are the authority for hosted-runner success; workflow configuration alone is not execution evidence.
+The initial Windows and Ubuntu jobs passed the Python suite, JavaScript tests, Ruff, and package build (run `41762905377`). CI installs a checksum-verified pinned restic release. GitHub Actions results are the authority for each subsequent revision; workflow configuration alone is not execution evidence.
 
 ## Not executed / outside this release
 
