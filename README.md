@@ -2,6 +2,10 @@
 
 Run isolated file-recovery drills, compare restored content with a saved baseline, and record whether integrity and recovery-time targets passed. Built with Python, FastAPI, SQLite, and plain browser modules.
 
+![Recovery runs and file-level evidence inspector](docs/assets/dashboard.jpg)
+
+The screenshot shows synthetic sample drills with measured restore and verification timings.
+
 ## What works today
 
 - **Real restore drills:** directory snapshots and a restic adapter, including snapshot subfolders.
