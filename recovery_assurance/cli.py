@@ -30,7 +30,10 @@ def main(argv: list[str] | None = None) -> int:
     drill.add_argument("--name", default="Recovery drill")
     drill.add_argument("--rto-seconds", type=float, default=60)
     drill.add_argument(
-        "--timeout", type=float, default=600, help="restic process timeout in seconds"
+        "--timeout",
+        type=float,
+        default=600,
+        help="Shared restic lookup and restore timeout in seconds",
     )
     for command in (
         drill,

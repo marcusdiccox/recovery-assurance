@@ -4,10 +4,12 @@
 
 Implemented: baseline capture, directory/restic restore drills, SHA-256 comparison, measured timing, SQLite history, CLI, local dashboard, portable reports, synthetic demo, and automated tests.
 
+Restic drills now resolve and pin full snapshot IDs before restoring, record them in evidence, and share a lookup/restore timeout budget.
+
 ## Next — make evidence operational
 
 - Durable job scheduling, concurrency limits, and retry policy for real drills.
-- Dataset configuration and baseline-to-snapshot catalog with resolved immutable snapshot IDs.
+- Dataset configuration and a persistent baseline-to-snapshot catalog.
 - Retention policies, signed evidence, and report delivery.
 - File-level progress and cancellation for large datasets.
 - Performance baselines using documented, representative workloads.

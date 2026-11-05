@@ -38,10 +38,10 @@ flowchart LR
 
 **Narrow browser authority.** Real filesystem paths and backup credentials are not browser inputs. The demo mutation requires an explicit header and same-origin requests. Trusted hosts and a restrictive dashboard CSP reduce exposure; these controls do not replace authentication for a future hosted service.
 
-**Restic is a subprocess boundary.** Arguments are passed without a shell; credentials come from the environment. The subprocess has a timeout and no interactive stdin. Raw output is suppressed so reports cannot inadvertently retain credential-bearing URLs or environment details. Inspect restic directly when diagnosing failures.
+**Restic is a subprocess boundary.** Arguments are passed without a shell; credentials come from the environment. Snapshot lookup and restore share a timeout and have no interactive stdin. Lookup JSON is validated in memory and only its full snapshot ID is retained. Restore output and stderr are suppressed so reports do not retain raw credential-bearing URLs or environment details. Inspect restic directly when diagnosing failures.
 
 ## Evidence contract
 
-A report records its ID, UTC timestamps, baseline hash, backend, requested snapshot identifier for restic, sample-data flag, objective, measured durations, integrity result, comparison counts and paths, outcome, and a sanitized error category. When `latest` is requested, the report identifies the selector as `latest`, not a resolved immutable snapshot ID; use a full ID for defensible evidence.
+A report records its ID, UTC timestamps, baseline hash, backend, requested snapshot identifier for restic, sample-data flag, objective, measured durations, integrity result, comparison counts and paths, outcome, and a sanitized error category. The additive `resolved_snapshot` field records the immutable full ID selected before restore; `snapshot` continues to record the requested selector. The resolved ID is used for the restore itself, not looked up again. It is retained on a later restore failure, and is `null` when resolution failed or the backend is a directory. Existing stored reports remain readable without migration.
 
 Stored report JSON is not cryptographically signed. The application has no update/delete route, but anyone with filesystem access can alter the database. Filenames in reports may themselves be sensitive: use synthetic data for portfolio screenshots.

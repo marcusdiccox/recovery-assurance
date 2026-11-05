@@ -171,7 +171,12 @@ def test_cloud_repository_uri_is_not_rewritten_as_local_path(files, tmp_path, mo
         assert backup == "azure:recovery:/snapshots"
         shutil.copytree(files, target, dirs_exist_ok=True)
 
+    def resolve(backup, selector, timeout):
+        assert backup == "azure:recovery:/snapshots"
+        return "a" * 64
+
     monkeypatch.setattr("recovery_assurance.core._restore", restore)
+    monkeypatch.setattr("recovery_assurance.core._resolve_restic_snapshot", resolve)
     report = run_drill(
         capture(files), "azure:recovery:/snapshots", Store(tmp_path / "runs.db"), backend="restic"
     )

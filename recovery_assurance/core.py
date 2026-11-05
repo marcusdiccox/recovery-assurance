@@ -127,6 +127,32 @@ def compare(manifest: dict, restored: Path) -> dict:
     }
 
 
+def _resolve_restic_snapshot(backup: Path | str, selector: str, timeout: float) -> str:
+    """Resolve once, retaining only the immutable ID from restic's private metadata."""
+    binary = shutil.which("restic")
+    if binary is None:
+        raise ValueError("restic is not installed or is not on PATH")
+    result = subprocess.run(
+        [binary, "--repo", str(backup), "snapshots", "--json", selector],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        timeout=timeout,
+        check=True,
+    )
+    snapshots = json.loads(result.stdout)
+    if not isinstance(snapshots, list) or len(snapshots) != 1 or not isinstance(snapshots[0], dict):
+        raise ValueError("Snapshot selector must resolve to exactly one snapshot")
+    resolved = snapshots[0].get("id")
+    if (
+        not isinstance(resolved, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", resolved)
+        or (selector != "latest" and not resolved.startswith(selector.lower()))
+    ):
+        raise ValueError("Invalid resolved snapshot ID")
+    return resolved
+
+
 def _restore(backend: str, backup: Path | str, target: Path, snapshot: str, timeout: float) -> None:
     if backend == "directory":
         # Validate the entire tree before copying: never follow source links.
@@ -186,6 +212,7 @@ def run_drill(
             json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest(),
         "snapshot": snapshot.split(":", 1)[0] if backend == "restic" else None,
+        "resolved_snapshot": None,
         "rto_seconds": rto_seconds,
         "status": "error",
         "integrity_ok": False,
@@ -199,7 +226,18 @@ def run_drill(
     try:
         with tempfile.TemporaryDirectory(prefix="recovery-drill-") as directory:
             target = Path(directory)
-            _restore(backend, backup, target, snapshot, timeout)
+            restore_snapshot = snapshot
+            restore_timeout = timeout
+            if backend == "restic":
+                selector, separator, subfolder = snapshot.partition(":")
+                deadline = time.perf_counter() + timeout
+                resolved = _resolve_restic_snapshot(backup, selector, timeout)
+                report["resolved_snapshot"] = resolved
+                restore_snapshot = resolved + (separator + subfolder if separator else "")
+                restore_timeout = deadline - time.perf_counter()
+                if restore_timeout <= 0:
+                    raise subprocess.TimeoutExpired("restic", timeout)
+            _restore(backend, backup, target, restore_snapshot, restore_timeout)
             report["restore_seconds"] = time.perf_counter() - started
             verify_start = time.perf_counter()
             report["comparison"] = compare(manifest, target)

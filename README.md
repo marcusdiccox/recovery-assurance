@@ -11,7 +11,7 @@ The screenshot shows synthetic sample drills with measured restore and verificat
 - **Real restore drills:** directory snapshots and a restic adapter, including snapshot subfolders.
 - **Content integrity:** relative paths, byte sizes, and streaming SHA-256; catches same-size corruption, missing files, and unexpected files.
 - **Recovery-time objectives:** separate restore and verification timings, with an end-to-end target that also includes temporary-directory setup and cleanup. A run passes only when both integrity and time pass.
-- **Persistent evidence:** SQLite history, a baseline fingerprint, JSON exports, and standalone HTML reports suitable for printing.
+- **Persistent evidence:** SQLite history, a baseline fingerprint, the resolved restic snapshot ID, JSON exports, and standalone HTML reports suitable for printing.
 - **Local operations dashboard:** a searchable run list, dataset and outcome filters, a persistent evidence inspector, and measured duration comparisons.
 - **Reproducible demo:** creates synthetic files and executes three actual drills: healthy recovery, integrity failure, and a deliberately impossible zero-second target. Timings are measured, never prefilled.
 - **Automation-ready CLI:** exit codes suitable for scheduled tasks and CI.
@@ -67,7 +67,9 @@ $env:RESTIC_PASSWORD_FILE = "C:\private\restic-password.txt"
 recovery-assurance drill --backend restic --backup "C:\backups\restic-repo" --snapshot "SNAPSHOT_ID:/C/data/source" --manifest ./baseline.json --name "Restic recovery" --rto-seconds 120 --timeout 600
 ```
 
-Replace `SNAPSHOT_ID` and the subfolder with the actual values from `restic snapshots` and `restic ls SNAPSHOT_ID`. On Linux, a subfolder might be `/home/marcus/source`. Restic restores full absolute paths by default; selecting `ID:/subfolder` puts that subfolder's contents at the verification root. For reproducibility, prefer a full snapshot ID to `latest`. See the [restic runbook](docs/restic-runbook.md).
+Replace `SNAPSHOT_ID` and the subfolder with the actual values from `restic snapshots` and `restic ls SNAPSHOT_ID`. On Linux, a subfolder might be `/home/marcus/source`. Restic restores full absolute paths by default; selecting `ID:/subfolder` puts that subfolder's contents at the verification root.
+
+Each restic drill resolves the selector once and restores that exact full ID, preserving the subfolder. Reports retain the requested selector in `snapshot` and the immutable ID in `resolved_snapshot`; a newer backup appearing during the drill cannot change its restore selection. For repeatability across separate drills, prefer a full ID to `latest`. Lookup and restore share the `--timeout` budget. See the [restic runbook](docs/restic-runbook.md).
 
 ## Docker
 
