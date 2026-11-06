@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "datasets": {
+    "documents-directory": {
+      "name": "Documents recovery",
+      "backend": "directory",
+      "manifest": "./baselines/documents.json",
+      "backup": "./snapshots/documents",
+      "rto_seconds": 60
+    },
+    "documents-restic": {
+      "name": "Documents restic recovery",
+      "backend": "restic",
+      "manifest": "./baselines/documents.json",
+      "backup": "azure:recovery:/documents",
+      "snapshot": "latest:/data/documents",
+      "rto_seconds": 120,
+      "timeout": 600
+    }
+  }
+}

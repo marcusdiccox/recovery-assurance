@@ -56,7 +56,17 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `1` | Drill completed but integrity or time objective failed |
 | `2` | Configuration, restore, verification, or command error |
 
-`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, demo, list, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, run, demo, list, and serve commands to select another database.
+
+## Repeat a named dataset
+
+Keep baseline and backup settings in a private configuration, then run a selected profile:
+
+```sh
+recovery-assurance run ./datasets.local.json --dataset documents-directory --db ./data/runs.db
+```
+
+Local backup and manifest paths resolve relative to the configuration file, so the drill selects the same inputs when a scheduler uses another working directory. The original `drill` command remains available. See [dataset configuration](docs/datasets.md) and the [example template](examples/datasets.example.json).
 
 ## Test a restic backup
 

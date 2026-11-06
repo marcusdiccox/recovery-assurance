@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from .config import load_dataset
 from .core import capture, load_manifest, run_drill, save_manifest
 from .demo import seed_demo
 from .storage import Store
@@ -35,8 +36,12 @@ def main(argv: list[str] | None = None) -> int:
         default=600,
         help="Shared restic lookup and restore timeout in seconds",
     )
+    configured = sub.add_parser("run", help="Run a named dataset from a JSON configuration")
+    configured.add_argument("config", type=Path, help="Dataset configuration file")
+    configured.add_argument("--dataset", required=True, help="Dataset name in the configuration")
     for command in (
         drill,
+        configured,
         sub.add_parser("demo", help="Execute three drills with synthetic files"),
         sub.add_parser("serve", help="Start the local dashboard"),
         sub.add_parser("list", help="Print the latest 200 evidence records"),
@@ -52,17 +57,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Captured {len(manifest['files'])} files. Baseline: {args.manifest}")
             return 0
         store = Store(args.db)
-        if args.command == "drill":
-            report = run_drill(
-                load_manifest(args.manifest),
-                args.backup,
-                store,
-                name=args.name,
-                rto_seconds=args.rto_seconds,
-                backend=args.backend,
-                snapshot=args.snapshot,
-                timeout=args.timeout,
-            )
+        if args.command in ("drill", "run"):
+            if args.command == "run":
+                options = load_dataset(args.config, args.dataset)
+                manifest_path = options.pop("manifest")
+            else:
+                manifest_path = args.manifest
+                options = {
+                    "backup": args.backup,
+                    "name": args.name,
+                    "rto_seconds": args.rto_seconds,
+                    "backend": args.backend,
+                    "snapshot": args.snapshot,
+                    "timeout": args.timeout,
+                }
+            report = run_drill(load_manifest(manifest_path), store=store, **options)
             print(json.dumps(report, indent=2))
             return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
         if args.command == "demo":

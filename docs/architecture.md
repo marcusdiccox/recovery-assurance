@@ -21,7 +21,8 @@ flowchart LR
 | `core.py` | Baseline validation, streaming hashes, backend invocation, comparison, timings |
 | `storage.py` | Parameterized, append-only SQLite inserts and bounded history reads |
 | `demo.py` | Synthetic fixtures and genuine successful / failed recovery drills |
-| `cli.py` | Capture, drill, list, demo, and loopback server commands |
+| `cli.py` | Capture, direct/profile drills, list, demo, and loopback server commands |
+| `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
 | `web.py` | Read APIs, local sample drill action, report downloads, static assets |
 | `reports.py` | Escaped, self-contained HTML evidence |
 | `static/` | Dependency-free dashboard, accessible controls, native dialogs, SVG chart |

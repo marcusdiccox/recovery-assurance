@@ -62,4 +62,4 @@ The local directory backend does not implement a hard timeout; `--timeout` appli
 - Environment details, dataset size, storage backend, and test conditions.
 - Measured findings and actual corrective actions; rerun the drill after a correction.
 
-For task scheduling, use Windows Task Scheduler or cron to run the CLI and inspect its exit code. Native scheduling, retries, notifications, and retention policies are not implemented yet.
+For task scheduling, use Windows Task Scheduler or cron to run the CLI and inspect its exit code. [Named dataset profiles](datasets.md) keep baseline and backup arguments together; use absolute paths for the config and database in scheduled commands. Native scheduling, retries, notifications, and retention policies are not implemented yet.
