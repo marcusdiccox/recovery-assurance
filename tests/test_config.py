@@ -62,6 +62,7 @@ def test_named_dataset_cli_runs_from_another_directory_and_preserves_exit_codes(
     assert good.returncode == 0, good.stderr
     report = json.loads(good.stdout)
     assert report["name"] == "Finance recovery"
+    assert report["dataset"] == "finance"
     assert report["comparison"]["matched"] == 1
     assert Store(database).get(report["id"]) == report
     (backup / "record.txt").write_text("corrupted", encoding="utf-8")
@@ -77,6 +78,24 @@ def test_named_dataset_cli_runs_from_another_directory_and_preserves_exit_codes(
     assert unknown.returncode == 2
     assert "Unknown dataset" in unknown.stderr
     assert "Traceback" not in unknown.stderr
+    history = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "recovery_assurance",
+            "list",
+            "--dataset",
+            "finance",
+            "--db",
+            str(database),
+        ],
+        cwd=other,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert history.returncode == 0, history.stderr
+    assert [row["dataset"] for row in json.loads(history.stdout)] == ["finance"] * 3
 
 
 @pytest.fixture

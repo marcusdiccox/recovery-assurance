@@ -33,11 +33,16 @@ class Store:
                 "INSERT INTO runs VALUES (?, ?, ?)", (report["id"], report["started_at"], encoded)
             )
 
-    def list(self, limit: int = 200) -> list[dict]:
+    def list(self, limit: int = 200, *, dataset: str | None = None) -> list[dict]:
+        query = "SELECT report FROM runs"
+        parameters = []
+        if dataset is not None:
+            query += " WHERE json_extract(report, '$.dataset') = ?"
+            parameters.append(dataset)
+        query += " ORDER BY started_at DESC LIMIT ?"
+        parameters.append(limit)
         with self._connect() as connection:
-            rows = connection.execute(
-                "SELECT report FROM runs ORDER BY started_at DESC LIMIT ?", (limit,)
-            ).fetchall()
+            rows = connection.execute(query, parameters).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def get(self, run_id: str) -> dict | None:

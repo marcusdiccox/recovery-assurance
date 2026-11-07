@@ -187,9 +187,12 @@ def run_drill(
     snapshot: str = "latest",
     timeout: float = 600,
     sample: bool = False,
+    dataset: str | None = None,
 ) -> dict:
     """RTO covers restore + integrity verification, excluding report persistence."""
     _validate(manifest)
+    if dataset is not None and (not isinstance(dataset, str) or "\x00" in dataset):
+        raise ValueError("Dataset must be a string without NUL characters")
     if not math.isfinite(rto_seconds) or rto_seconds < 0:
         raise ValueError("Recovery-time objective must be finite and nonnegative")
     if not math.isfinite(timeout) or timeout <= 0:
@@ -204,6 +207,7 @@ def run_drill(
         "schema_version": 1,
         "id": uuid.uuid4().hex,
         "name": name.strip(),
+        "dataset": dataset,
         "started_at": _now(),
         "backend": backend,
         "sample": sample,

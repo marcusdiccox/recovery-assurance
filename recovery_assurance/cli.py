@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     drill.add_argument("--backend", choices=["directory", "restic"], default="directory")
     drill.add_argument("--snapshot", default="latest", help="restic ID[:/subfolder] or latest")
     drill.add_argument("--name", default="Recovery drill")
+    drill.add_argument("--dataset", help="Optional dataset label saved with this drill")
     drill.add_argument("--rto-seconds", type=float, default=60)
     drill.add_argument(
         "--timeout",
@@ -49,6 +50,9 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--db", type=Path, default=Path("data/runs.db"))
     serve = sub.choices["serve"]
     serve.add_argument("--port", type=int, default=8765)
+    sub.choices["list"].add_argument(
+        "--dataset", help="Only list runs with this exact dataset label"
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "capture":
@@ -71,13 +75,15 @@ def main(argv: list[str] | None = None) -> int:
                     "snapshot": args.snapshot,
                     "timeout": args.timeout,
                 }
-            report = run_drill(load_manifest(manifest_path), store=store, **options)
+            report = run_drill(
+                load_manifest(manifest_path), store=store, dataset=args.dataset, **options
+            )
             print(json.dumps(report, indent=2))
             return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
         if args.command == "demo":
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":
-            print(json.dumps(store.list(), indent=2))
+            print(json.dumps(store.list(dataset=args.dataset), indent=2))
         else:
             import uvicorn
 

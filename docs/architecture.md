@@ -19,7 +19,7 @@ flowchart LR
 | Module | Responsibility |
 |---|---|
 | `core.py` | Baseline validation, streaming hashes, backend invocation, comparison, timings |
-| `storage.py` | Parameterized, append-only SQLite inserts and bounded history reads |
+| `storage.py` | Parameterized, append-only SQLite inserts and bounded, optionally dataset-filtered history reads |
 | `demo.py` | Synthetic fixtures and genuine successful / failed recovery drills |
 | `cli.py` | Capture, direct/profile drills, list, demo, and loopback server commands |
 | `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
@@ -46,3 +46,5 @@ flowchart LR
 A report records its ID, UTC timestamps, baseline hash, backend, requested snapshot identifier for restic, sample-data flag, objective, measured durations, integrity result, comparison counts and paths, outcome, and a sanitized error category. The additive `resolved_snapshot` field records the immutable full ID selected before restore; `snapshot` continues to record the requested selector. The resolved ID is used for the restore itself, not looked up again. It is retained on a later restore failure, and is `null` when resolution failed or the backend is a directory. Existing stored reports remain readable without migration.
 
 Stored report JSON is not cryptographically signed. The application has no update/delete route, but anyone with filesystem access can alter the database. Filenames in reports may themselves be sensitive: use synthetic data for portfolio screenshots.
+
+Named profiles save their key in the additive `dataset` field; direct drills can provide the same label. `Store.list(dataset=...)`, CLI history, and the read API apply an exact parameterized filter before the history limit using SQLite's JSON extraction. Old rows need no migration: absent or null labels remain unassigned and appear in unfiltered history. A dataset label links historical baseline fingerprints and resolved snapshot IDs, but it is not a separate catalog or a uniqueness guarantee across configuration files.

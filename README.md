@@ -68,6 +68,8 @@ recovery-assurance run ./datasets.local.json --dataset documents-directory --db 
 
 Local backup and manifest paths resolve relative to the configuration file, so the drill selects the same inputs when a scheduler uses another working directory. The original `drill` command remains available. See [dataset configuration](docs/datasets.md) and the [example template](examples/datasets.example.json).
 
+Profile keys are saved as dataset labels in evidence. Use `recovery-assurance list --dataset documents-directory --db ./data/runs.db` to review that dataset's latest 200 records. Direct drills can opt in with `--dataset`; older and unlabelled records remain in combined history.
+
 ## Test a restic backup
 
 Install [restic](https://restic.net/) separately. Credentials remain in restic's environment or password-file configuration. They are not stored in reports.

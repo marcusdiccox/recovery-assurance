@@ -90,9 +90,20 @@ def test_cli_capture_drill_and_failure_exit_codes(tmp_path):
         )
 
     assert cli("capture", source, "--manifest", manifest).returncode == 0
-    good = cli("drill", "--manifest", manifest, "--backup", source, "--db", db)
+    good = cli(
+        "drill",
+        "--manifest",
+        manifest,
+        "--backup",
+        source,
+        "--db",
+        db,
+        "--dataset",
+        "operations",
+    )
     assert good.returncode == 0, good.stderr
     assert json.loads(good.stdout)["status"] == "passed"
+    assert json.loads(good.stdout)["dataset"] == "operations"
     (source / "file.txt").write_text("corrupted")
     bad = cli("drill", "--manifest", manifest, "--backup", source, "--db", db)
     assert bad.returncode == 1

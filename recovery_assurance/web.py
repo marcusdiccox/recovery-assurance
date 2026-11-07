@@ -46,8 +46,8 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/runs")
-    def runs():
-        return store.list()
+    def runs(dataset: str | None = None):
+        return store.list(dataset=dataset)
 
     @app.post("/api/demo", status_code=201)
     def demo(request: Request):

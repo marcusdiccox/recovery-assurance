@@ -8,10 +8,12 @@ Restic drills now resolve and pin full snapshot IDs before restoring, record the
 
 Named dataset profiles now pair baseline paths, backup locations, and drill settings for repeatable CLI execution from different working directories.
 
+Provided dataset labels now persist with each run and support CLI/API history filtering before the record limit, linking past baseline fingerprints and resolved snapshot IDs.
+
 ## Next — make evidence operational
 
 - Durable job scheduling, concurrency limits, and retry policy for real drills.
-- Persistent baseline-to-snapshot catalog with dataset history.
+- Registered dataset identities and an explicit baseline-to-snapshot catalog beyond run history.
 - Retention policies, signed evidence, and report delivery.
 - File-level progress and cancellation for large datasets.
 - Performance baselines using documented, representative workloads.

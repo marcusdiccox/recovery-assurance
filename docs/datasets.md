@@ -10,6 +10,20 @@ recovery-assurance run ./datasets.local.json --dataset documents-directory --db 
 
 The command runs one selected dataset and prints the same JSON evidence as `drill`. Exit codes remain **0** for passed, **1** for failed integrity or time target, and **2** for a configuration or execution error. Unknown dataset names fail without falling back to another profile.
 
+## Review a dataset's history
+
+Named-profile runs save the profile key in the report's `dataset` field, separately from its display name. This identity stays attached to passed, failed, and error records alongside the baseline fingerprint and resolved restic snapshot ID. The JSON and HTML exports include it.
+
+```sh
+recovery-assurance list --dataset documents-directory --db ./data/runs.db
+```
+
+This returns up to 200 matching records, newest first. Matching happens before the limit, so a quiet dataset's older records remain accessible even when other datasets have newer activity. Labels match exactly, including case. An unknown label returns an empty list and exit code 0.
+
+For a direct drill, add `--dataset documents-directory` to the existing `drill` command to attach the same label. The local read API accepts `/api/runs?dataset=documents-directory` as well. Omitting the filter returns the ordinary combined history; the dashboard's existing sample/real-run controls are unchanged.
+
+Dataset labels are local database groupings, not globally registered IDs. Reusing the same key across config files combines their history, so choose distinct keys when that is not intended. Renaming a profile key starts a new grouping; changing only its `name` keeps the grouping. Older reports and unlabelled direct/sample drills remain visible in combined history and are not retroactively assigned to a profile. Choose non-sensitive labels when exporting public portfolio evidence.
+
 ## Path rules
 
 - Relative manifest paths and bare local backup paths resolve against the configuration file's directory, including for local restic repositories. They are independent of the shell's working directory.
@@ -34,4 +48,4 @@ The root object has `schema_version: 1` and a `datasets` object keyed by dataset
 
 The file must be UTF-8, with or without a BOM, and no larger than 1 MiB. Duplicate JSON keys, unknown settings, and invalid field types are rejected. Only the selected profile's settings are validated; an unused profile cannot change the selected drill. Snapshot and display-name rules remain enforced by the existing drill engine. Profiles never create or update baseline manifests, and they do not create backups.
 
-This command supplies repeatable inputs. It does not install a scheduler, retry work, retain history automatically, or provision cloud resources. Windows Task Scheduler or cron can invoke it using the same exit-code contract as `drill`.
+This command supplies repeatable inputs. It does not install a scheduler, retry work, apply retention policies, or provision cloud resources. Windows Task Scheduler or cron can invoke it using the same exit-code contract as `drill`.
