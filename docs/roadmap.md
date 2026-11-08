@@ -10,11 +10,13 @@ Named dataset profiles now pair baseline paths, backup locations, and drill sett
 
 Provided dataset labels now persist with each run and support CLI/API history filtering before the record limit, linking past baseline fingerprints and resolved snapshot IDs.
 
+Saved evidence can now be exported from the CLI as JSON or standalone HTML without running a server or repeating a drill. Existing output files are protected from overwriting.
+
 ## Next — make evidence operational
 
 - Durable job scheduling, concurrency limits, and retry policy for real drills.
 - Registered dataset identities and an explicit baseline-to-snapshot catalog beyond run history.
-- Retention policies, signed evidence, and report delivery.
+- Retention policies, signed evidence, and external report delivery beyond local exports.
 - File-level progress and cancellation for large datasets.
 - Performance baselines using documented, representative workloads.
 

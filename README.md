@@ -56,7 +56,7 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `1` | Drill completed but integrity or time objective failed |
 | `2` | Configuration, restore, verification, or command error |
 
-`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, run, demo, list, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, run, demo, list, export, and serve commands to select another database.
 
 ## Repeat a named dataset
 
@@ -69,6 +69,19 @@ recovery-assurance run ./datasets.local.json --dataset documents-directory --db 
 Local backup and manifest paths resolve relative to the configuration file, so the drill selects the same inputs when a scheduler uses another working directory. The original `drill` command remains available. See [dataset configuration](docs/datasets.md) and the [example template](examples/datasets.example.json).
 
 Profile keys are saved as dataset labels in evidence. Use `recovery-assurance list --dataset documents-directory --db ./data/runs.db` to review that dataset's latest 200 records. Direct drills can opt in with `--dataset`; older and unlabelled records remain in combined history.
+
+## Export saved evidence from the CLI
+
+Export a recorded run without starting the dashboard or repeating the restore. Replace `RUN_ID` with the `id` printed by a drill or `list`:
+
+```sh
+recovery-assurance export RUN_ID --output ./data/report.json
+recovery-assurance export RUN_ID --format html --output ./data/report.html
+```
+
+JSON is the default; `--format` selects the format regardless of the filename. Both formats retain the stored outcome, dataset label, baseline fingerprint, and snapshot evidence where present. HTML uses the same standalone, escaped report as the dashboard and can be printed from a browser. Exporting a failed or error run succeeds with exit code **0**; it does not change the drill's recorded outcome or append another run.
+
+The output file must be new and its parent directory must already exist. Existing files are never overwritten. Unknown run IDs, missing or invalid databases, and output errors return **2**. Use `--db` to select existing history; relative database and output paths use the shell's working directory. Keep real exports private: reports can contain filenames and dataset labels. The example paths above stay under Git-ignored `data/`.
 
 ## Test a restic backup
 

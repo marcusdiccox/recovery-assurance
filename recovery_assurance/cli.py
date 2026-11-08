@@ -2,12 +2,14 @@
 
 import argparse
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
 from .config import load_dataset
 from .core import capture, load_manifest, run_drill, save_manifest
 from .demo import seed_demo
+from .reports import html_report
 from .storage import Store
 
 
@@ -40,9 +42,14 @@ def main(argv: list[str] | None = None) -> int:
     configured = sub.add_parser("run", help="Run a named dataset from a JSON configuration")
     configured.add_argument("config", type=Path, help="Dataset configuration file")
     configured.add_argument("--dataset", required=True, help="Dataset name in the configuration")
+    exporter = sub.add_parser("export", help="Export a saved run without rerunning the drill")
+    exporter.add_argument("run_id", help="ID from a drill report or the history list")
+    exporter.add_argument("--format", choices=["json", "html"], default="json")
+    exporter.add_argument("--output", required=True, type=Path, help="New evidence file to create")
     for command in (
         drill,
         configured,
+        exporter,
         sub.add_parser("demo", help="Execute three drills with synthetic files"),
         sub.add_parser("serve", help="Start the local dashboard"),
         sub.add_parser("list", help="Print the latest 200 evidence records"),
@@ -60,6 +67,8 @@ def main(argv: list[str] | None = None) -> int:
             save_manifest(manifest, args.manifest)
             print(f"Captured {len(manifest['files'])} files. Baseline: {args.manifest}")
             return 0
+        if args.command == "export" and not args.db.is_file():
+            raise ValueError("Database does not exist; select an existing history with --db")
         store = Store(args.db)
         if args.command in ("drill", "run"):
             if args.command == "run":
@@ -84,6 +93,18 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":
             print(json.dumps(store.list(dataset=args.dataset), indent=2))
+        elif args.command == "export":
+            report = store.get(args.run_id)
+            if report is None:
+                raise ValueError("Run not found")
+            document = (
+                html_report(report)
+                if args.format == "html"
+                else json.dumps(report, indent=2, allow_nan=False) + "\n"
+            )
+            with args.output.open("x", encoding="utf-8") as file:
+                file.write(document)
+            print(f"Exported {args.format.upper()} evidence.")
         else:
             import uvicorn
 
@@ -92,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Dashboard: http://127.0.0.1:{args.port}")
             uvicorn.run(create_app(args.db), host="127.0.0.1", port=args.port)
         return 0
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, sqlite3.Error) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 2
 
