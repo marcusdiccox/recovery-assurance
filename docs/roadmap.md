@@ -10,7 +10,7 @@ Named dataset profiles now pair baseline paths, backup locations, and drill sett
 
 Provided dataset labels now persist with each run and support CLI/API history filtering before the record limit, linking past baseline fingerprints and resolved snapshot IDs.
 
-Saved evidence can now be exported from the CLI as JSON or standalone HTML without running a server or repeating a drill. Existing output files are protected from overwriting.
+Saved evidence can now be exported from the CLI as JSON or standalone HTML without running a server or repeating a drill. Existing output files are protected from overwriting, and source databases are opened read-only without journal-mode or schema initialization.
 
 ## Next — make evidence operational
 

@@ -4,7 +4,7 @@ This document distinguishes executed checks from configuration and future plans.
 
 ## Executed locally
 
-- Windows, Python 3.12: **106 Python tests passed**, including real restic restores selected by full ID, abbreviated ID, and `latest` from a repository with multiple snapshots.
+- Windows, Python 3.12: **114 Python tests passed**, including real restic restores selected by full ID, abbreviated ID, and `latest` from a repository with multiple snapshots.
 - Node.js: **6 dashboard tests passed**, including combined filters, incomplete timing summaries, empty evidence, and distinct failure reasons.
 - Ruff: lint and formatting checks passed.
 - Built the wheel and source distribution, with dashboard assets included in the wheel.
@@ -13,6 +13,7 @@ This document distinguishes executed checks from configuration and future plans.
 - Named-profile checks run the actual CLI from another working directory and cover persisted outcomes and exit codes 0/1/2. They also verify config-relative local paths, unchanged remote URIs, duplicate/invalid settings, finite limits, UTF-8 BOM input, and preservation of directory symlink rejection. Both example profiles were parsed with the production loader.
 - Dataset-history checks cover labels on passed, failed, and error reports; CLI/API filtering; exact label matching with bound SQL parameters; filtering before the history limit; and unchanged legacy reports without a dataset field.
 - CLI export checks use actual subprocesses and stored passed/failed/error drills whose backup source has been removed. They verify exact JSON evidence, escaped standalone HTML, unchanged history, format selection, overwrite protection (including the history database), and clear failures for unknown IDs, missing/invalid databases, and missing output parents.
+- Read-only export regressions cover write-protected JSON/HTML archives, unchanged database bytes and journal mode, URI-sensitive paths, rejected inserts and missing databases, and committed WAL evidence while a writer remains open. Real Windows extended-path exports and a portable UNC URI-conversion check cover the path issue found during independent review. The conversion check maps the SQLite call to a local fixture; end-to-end SMB access and physically read-only mounted volumes were not exercised.
 - CLI demo: three real drills on 25 synthetic files per drill, with recorded durations and deliberate integrity/time failures.
 - Browser, November 4, 2026: inspected the redesigned dashboard at desktop and narrow viewport sizes. Verified combined filters, empty datasets, the verification guide, sample execution, selected-run exports, and keyboard focus moving to the inspector. The narrow layout stayed within the viewport, with the table scrolling independently. No browser errors or warnings were recorded.
 - Independent read-only code review completed. The recursive-copy containment finding, SQLite cleanup, and misleading sample-summary message were fixed and covered by regressions.

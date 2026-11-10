@@ -4,11 +4,15 @@ import json
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import quote
 
 
 class Store:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, read_only: bool = False):
         self.path = Path(path)
+        self.read_only = read_only
+        if read_only:
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as connection:
             connection.execute("PRAGMA journal_mode=WAL")
@@ -19,7 +23,12 @@ class Store:
 
     @contextmanager
     def _connect(self):
-        connection = sqlite3.connect(self.path, timeout=15)
+        if self.read_only:
+            # Preserve native UNC/extended paths without introducing a URI authority.
+            uri = "file:" + quote(str(self.path.resolve()), safe="/:") + "?mode=ro"
+            connection = sqlite3.connect(uri, uri=True, timeout=15)
+        else:
+            connection = sqlite3.connect(self.path, timeout=15)
         try:
             with connection:
                 yield connection

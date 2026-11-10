@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "export" and not args.db.is_file():
             raise ValueError("Database does not exist; select an existing history with --db")
-        store = Store(args.db)
+        store = Store(args.db, read_only=args.command == "export")
         if args.command in ("drill", "run"):
             if args.command == "run":
                 options = load_dataset(args.config, args.dataset)

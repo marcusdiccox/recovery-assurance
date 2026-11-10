@@ -19,7 +19,7 @@ flowchart LR
 | Module | Responsibility |
 |---|---|
 | `core.py` | Baseline validation, streaming hashes, backend invocation, comparison, timings |
-| `storage.py` | Parameterized, append-only SQLite inserts and bounded, optionally dataset-filtered history reads |
+| `storage.py` | Parameterized, append-only SQLite inserts, bounded history reads, and optional read-only connections |
 | `demo.py` | Synthetic fixtures and genuine successful / failed recovery drills |
 | `cli.py` | Capture, direct/profile drills, list, saved-evidence export, demo, and loopback server commands |
 | `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
@@ -48,5 +48,7 @@ A report records its ID, UTC timestamps, baseline hash, backend, requested snaps
 Stored report JSON is not cryptographically signed. The application has no update/delete route, but anyone with filesystem access can alter the database. Filenames in reports may themselves be sensitive: use synthetic data for portfolio screenshots.
 
 The CLI `export` command retrieves a saved report by ID and writes JSON or the existing standalone HTML rendering as UTF-8. It serializes before exclusively creating the destination, refuses existing files, and does not append or modify run evidence. It requires an existing database and output parent directory. This supports local evidence collection without starting an HTTP server; it does not schedule or deliver reports to an external service.
+
+`Store(path, read_only=True)` skips directory, table, and journal initialization and uses an escaped absolute file URI with SQLite `mode=ro`. CLI export selects this mode; other commands retain the existing writable default. Reads preserve SQLite locking and committed WAL visibility rather than assuming an immutable database. Inserts through a read-only store fail at the SQLite boundary, and opening a missing database cannot create it. Read-only WAL access still follows SQLite's sidecar requirements, as documented in the README.
 
 Named profiles save their key in the additive `dataset` field; direct drills can provide the same label. `Store.list(dataset=...)`, CLI history, and the read API apply an exact parameterized filter before the history limit using SQLite's JSON extraction. Old rows need no migration: absent or null labels remain unassigned and appear in unfiltered history. A dataset label links historical baseline fingerprints and resolved snapshot IDs, but it is not a separate catalog or a uniqueness guarantee across configuration files.
