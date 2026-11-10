@@ -31,6 +31,8 @@ flowchart LR
 
 **Saved baselines rather than the current source.** The expected state must represent the backed-up data. Hashing today's live source after restoring last week's backup would confuse ordinary changes with corruption. Each report records the baseline's canonical-JSON SHA-256.
 
+**Unambiguous baseline input.** The manifest loader rejects duplicate JSON keys in every object before they can replace file paths, sizes, or checksums. This also covers keys that decode to the same string through JSON escapes. Schema version must be the integer `1`; boolean and floating-point lookalikes are invalid. UTF-8 input may include a BOM, and the parsed manifest supplies the existing canonical fingerprint. Direct and named-profile CLI drills validate the baseline before starting a restore or appending run evidence.
+
 **All checks must pass.** A fast restore with changed files fails. A correct restore outside its objective fails. A failed backend is an error record, never a successful empty comparison. Empty manifests cannot establish recovery success.
 
 **Temporary restore destinations.** Every drill gets a fresh directory; original data is not overwritten. Temporary files are removed before a successful run is finalized. The end-to-end timer includes cleanup and excludes report persistence.

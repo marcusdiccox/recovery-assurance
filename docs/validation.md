@@ -4,13 +4,14 @@ This document distinguishes executed checks from configuration and future plans.
 
 ## Executed locally
 
-- Windows, Python 3.12: **114 Python tests passed**, including real restic restores selected by full ID, abbreviated ID, and `latest` from a repository with multiple snapshots.
+- Windows, Python 3.12: **127 Python tests passed**, including real restic restores selected by full ID, abbreviated ID, and `latest` from a repository with multiple snapshots.
 - Node.js: **6 dashboard tests passed**, including combined filters, incomplete timing summaries, empty evidence, and distinct failure reasons.
 - Ruff: lint and formatting checks passed.
 - Built the wheel and source distribution, with dashboard assets included in the wheel.
 - restic **0.19.1**, downloaded from the official release; checksum-verified installer also exercised on Windows.
 - Snapshot identity regressions verify that only a resolved full ID reaches restore, subfolders are preserved, invalid/missing/ambiguous lookups stop without restoring, lookup errors remain sanitized, and lookup/restore share a timeout budget. Resolved IDs survive a later restore failure and appear in exported HTML evidence.
 - Named-profile checks run the actual CLI from another working directory and cover persisted outcomes and exit codes 0/1/2. They also verify config-relative local paths, unchanged remote URIs, duplicate/invalid settings, finite limits, UTF-8 BOM input, and preservation of directory symlink rejection. Both example profiles were parsed with the production loader.
+- Baseline-loading regressions reject duplicate schema, files, paths, sizes, and checksum keys, including paths that collide after JSON escape decoding. Boolean/float schema versions are rejected before recording a drill. UTF-8 BOM input with Unicode paths produces valid recovery evidence. Actual direct/profile CLI subprocesses reject a conflicting-checksum baseline with exit code 2 and no appended run; both previously reported success with the same fixture.
 - Dataset-history checks cover labels on passed, failed, and error reports; CLI/API filtering; exact label matching with bound SQL parameters; filtering before the history limit; and unchanged legacy reports without a dataset field.
 - CLI export checks use actual subprocesses and stored passed/failed/error drills whose backup source has been removed. They verify exact JSON evidence, escaped standalone HTML, unchanged history, format selection, overwrite protection (including the history database), and clear failures for unknown IDs, missing/invalid databases, and missing output parents.
 - Read-only export regressions cover write-protected JSON/HTML archives, unchanged database bytes and journal mode, URI-sensitive paths, rejected inserts and missing databases, and committed WAL evidence while a writer remains open. Real Windows extended-path exports and a portable UNC URI-conversion check cover the path issue found during independent review. The conversion check maps the SQLite call to a local fixture; end-to-end SMB access and physically read-only mounted volumes were not exercised.

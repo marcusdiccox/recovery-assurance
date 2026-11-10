@@ -70,7 +70,11 @@ def capture(source: Path) -> dict:
 
 
 def _validate(manifest: dict) -> None:
-    if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
+    if (
+        not isinstance(manifest, dict)
+        or type(manifest.get("schema_version")) is not int
+        or manifest["schema_version"] != 1
+    ):
         raise ValueError("Unsupported manifest schema")
     files = manifest.get("files")
     if not isinstance(files, dict) or not files:
@@ -101,10 +105,21 @@ def save_manifest(manifest: dict, path: Path) -> None:
         json.dump(manifest, stream, indent=2, allow_nan=False)
 
 
+def _unique_manifest_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate manifest key")
+        result[key] = value
+    return result
+
+
 def load_manifest(path: Path) -> dict:
     if Path(path).stat().st_size > 32 * 1024 * 1024:
         raise ValueError("Manifest exceeds 32 MiB limit")
-    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    manifest = json.loads(
+        Path(path).read_text(encoding="utf-8-sig"), object_pairs_hook=_unique_manifest_keys
+    )
     _validate(manifest)
     return manifest
 

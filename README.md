@@ -41,6 +41,8 @@ On Linux/macOS, replace `.venv\Scripts\python` with `.venv/bin/python`.
 
 Use stable test data. Capture a baseline **at the time the backup snapshot is created**, and store the manifest outside the source and backup directories. Reusing a baseline from different data will correctly report differences.
 
+Baseline files use UTF-8 JSON, with or without a BOM, and integer `schema_version: 1`. Duplicate keys at any level, including repeated file paths or checksum fields, are rejected. A rejected baseline returns exit code **2** before restoring files or appending run evidence.
+
 ```powershell
 recovery-assurance capture ./source --manifest ./baseline-2026-11-03.json
 # Create your backup snapshot separately; this tool does not schedule backups.
