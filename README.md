@@ -58,7 +58,7 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `1` | Drill completed but integrity or time objective failed |
 | `2` | Configuration, restore, verification, or command error |
 
-`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, run, demo, list, export, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, run, demo, list, export, backup-history, and serve commands to select another database.
 
 ## Repeat a named dataset
 
@@ -86,6 +86,21 @@ JSON is the default; `--format` selects the format regardless of the filename. B
 The output file must be new and its parent directory must already exist. Existing files are never overwritten. Unknown run IDs, missing or invalid databases, and output errors return **2**. Use `--db` to select existing history; relative database and output paths use the shell's working directory. Keep real exports private: reports can contain filenames and dataset labels. The example paths above stay under Git-ignored `data/`.
 
 Export opens the source database read-only, without initializing its schema or changing its journal mode. Readable archives can therefore be exported even when the database file is write-protected. For an archive on read-only media, prepare a consistent SQLite snapshot in rollback-journal (`DELETE`) mode before locking it down. WAL histories retain SQLite's [sidecar requirements](https://www.sqlite.org/wal.html#read_only_databases): existing readable `-wal`/`-shm` files or permission to create them may be needed. Do not separate a live database from its WAL when making an archive. Export does not convert or repair history.
+
+## Back up run history
+
+Create a consistent SQLite copy of the entire history database, including committed records still in its WAL. This uses [SQLite's online backup API](https://www.sqlite.org/backup.html), independently of the history list's 200-record limit:
+
+```sh
+recovery-assurance backup-history --db ./data/runs.db --output ./data/history-2026-11-12.db
+recovery-assurance export RUN_ID --db ./data/history-2026-11-12.db --output ./data/archived-report.json
+```
+
+Choose a new output filename and an existing parent directory. Existing files, including the source database and symlink destinations, are rejected. The source is opened read-only; only the copy is finalized in rollback-journal (`DELETE`) mode so it can be used as a standalone archive. The command preserves all database contents and does not rerun drills, delete old records, or back up the source files tested by those drills. Keep history archives private: they contain report paths, labels, and any other tables stored in that database. The example paths stay under Git-ignored `data/`.
+
+Source and output names must not overlap SQLite companion filenames (`-journal`, `-wal`, or `-shm`). Existing output companion paths, including dangling symlinks, are also rejected before creating the archive. Choose a different basename if one of these paths is already present.
+
+Exit code **0** means the archive is ready; ordinary errors return **2**. Copy progress has a 15-second budget, with SQLite connection waits applying separately. Handled copy failures remove the newly created partial output. Abrupt process termination can leave an incomplete file, so use an archive only after a successful command. No automatic retention, repair, scheduling, or external storage is configured.
 
 ## Test a restic backup
 

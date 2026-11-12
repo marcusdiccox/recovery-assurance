@@ -46,10 +46,17 @@ def main(argv: list[str] | None = None) -> int:
     exporter.add_argument("run_id", help="ID from a drill report or the history list")
     exporter.add_argument("--format", choices=["json", "html"], default="json")
     exporter.add_argument("--output", required=True, type=Path, help="New evidence file to create")
+    history_backup = sub.add_parser(
+        "backup-history", help="Create a consistent SQLite copy of all saved run history"
+    )
+    history_backup.add_argument(
+        "--output", required=True, type=Path, help="New SQLite file to create"
+    )
     for command in (
         drill,
         configured,
         exporter,
+        history_backup,
         sub.add_parser("demo", help="Execute three drills with synthetic files"),
         sub.add_parser("serve", help="Start the local dashboard"),
         sub.add_parser("list", help="Print the latest 200 evidence records"),
@@ -67,9 +74,10 @@ def main(argv: list[str] | None = None) -> int:
             save_manifest(manifest, args.manifest)
             print(f"Captured {len(manifest['files'])} files. Baseline: {args.manifest}")
             return 0
-        if args.command == "export" and not args.db.is_file():
+        read_only = args.command in ("export", "backup-history")
+        if read_only and not args.db.is_file():
             raise ValueError("Database does not exist; select an existing history with --db")
-        store = Store(args.db, read_only=args.command == "export")
+        store = Store(args.db, read_only=read_only)
         if args.command in ("drill", "run"):
             if args.command == "run":
                 options = load_dataset(args.config, args.dataset)
@@ -93,6 +101,9 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":
             print(json.dumps(store.list(dataset=args.dataset), indent=2))
+        elif args.command == "backup-history":
+            store.backup_to(args.output)
+            print("History backup created.")
         elif args.command == "export":
             report = store.get(args.run_id)
             if report is None:

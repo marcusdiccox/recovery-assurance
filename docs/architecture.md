@@ -19,9 +19,9 @@ flowchart LR
 | Module | Responsibility |
 |---|---|
 | `core.py` | Baseline validation, streaming hashes, backend invocation, comparison, timings |
-| `storage.py` | Parameterized, append-only SQLite inserts, bounded history reads, and optional read-only connections |
+| `storage.py` | Parameterized SQLite inserts, bounded history reads, optional read-only connections, and consistent history copies |
 | `demo.py` | Synthetic fixtures and genuine successful / failed recovery drills |
-| `cli.py` | Capture, direct/profile drills, list, saved-evidence export, demo, and loopback server commands |
+| `cli.py` | Capture, direct/profile drills, list, saved-evidence export, history backup, demo, and loopback server commands |
 | `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
 | `web.py` | Read APIs, local sample drill action, report downloads, static assets |
 | `reports.py` | Escaped, self-contained HTML evidence |
@@ -51,6 +51,8 @@ Stored report JSON is not cryptographically signed. The application has no updat
 
 The CLI `export` command retrieves a saved report by ID and writes JSON or the existing standalone HTML rendering as UTF-8. It serializes before exclusively creating the destination, refuses existing files, and does not append or modify run evidence. It requires an existing database and output parent directory. This supports local evidence collection without starting an HTTP server; it does not schedule or deliver reports to an external service.
 
-`Store(path, read_only=True)` skips directory, table, and journal initialization and uses an escaped absolute file URI with SQLite `mode=ro`. CLI export selects this mode; other commands retain the existing writable default. Reads preserve SQLite locking and committed WAL visibility rather than assuming an immutable database. Inserts through a read-only store fail at the SQLite boundary, and opening a missing database cannot create it. Read-only WAL access still follows SQLite's sidecar requirements, as documented in the README.
+`Store(path, read_only=True)` skips directory, table, and journal initialization and uses an escaped absolute file URI with SQLite `mode=ro`. CLI export and history backup select this mode; other commands retain the existing writable default. Reads preserve SQLite locking and committed WAL visibility rather than assuming an immutable database. Inserts through a read-only store fail at the SQLite boundary, and opening a missing database cannot create it. Read-only WAL access still follows SQLite's sidecar requirements, as documented in the README.
+
+`backup-history` also selects read-only source access. `Store.backup_to(output)` rejects source/output sidecar-name overlap in either direction and pre-existing destination companions, including dangling links, before creating output. Native path-name comparison and parent-directory identity account for Windows casing and directory aliases. The method checks the runs table, exclusively creates a new destination, and calls SQLite's backup API in 128-page steps with a 15-second progress budget. It copies the entire database, including committed WAL content, and switches only the destination to `DELETE` journal mode. Connections close before success is returned; handled copy failures remove the new partial destination, while pre-existing paths are never removed. This is a local evidence archive, not a backup of the files referenced by evidence or an automatic retention policy.
 
 Named profiles save their key in the additive `dataset` field; direct drills can provide the same label. `Store.list(dataset=...)`, CLI history, and the read API apply an exact parameterized filter before the history limit using SQLite's JSON extraction. Old rows need no migration: absent or null labels remain unassigned and appear in unfiltered history. A dataset label links historical baseline fingerprints and resolved snapshot IDs, but it is not a separate catalog or a uniqueness guarantee across configuration files.
