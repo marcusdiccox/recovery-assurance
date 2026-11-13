@@ -11,7 +11,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .demo import seed_demo
 from .reports import html_report
-from .storage import Store
+from .storage import HistoryCursorNotFound, Store
 
 
 def create_app(db_path: Path | None = None) -> FastAPI:
@@ -46,8 +46,11 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/runs")
-    def runs(dataset: str | None = None):
-        return store.list(dataset=dataset)
+    def runs(dataset: str | None = None, before: str | None = None):
+        try:
+            return store.list(dataset=dataset, before=before)
+        except HistoryCursorNotFound as error:
+            raise HTTPException(404, str(error)) from None
 
     @app.post("/api/demo", status_code=201)
     def demo(request: Request):

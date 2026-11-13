@@ -18,7 +18,19 @@ Named-profile runs save the profile key in the report's `dataset` field, separat
 recovery-assurance list --dataset documents-directory --db ./data/runs.db
 ```
 
-This returns up to 200 matching records, newest first. Matching happens before the limit, so a quiet dataset's older records remain accessible even when other datasets have newer activity. Labels match exactly, including case. An unknown label returns an empty list and exit code 0.
+This returns up to 200 matching records, ordered by stored start timestamp descending, then ID descending for equal timestamps. Matching happens before the limit, so a quiet dataset's older records remain accessible even when other datasets have newer activity. Labels match exactly, including case. An unknown label returns an empty list and exit code 0.
+
+To continue through older evidence, use the final record's `id` as the next page's cursor:
+
+```sh
+recovery-assurance list --dataset documents-directory --before LAST_RUN_ID --db ./data/runs.db
+```
+
+Repeat the same dataset filter and replace `LAST_RUN_ID` with the final ID on each returned page. The cursor record is excluded; stop when the list is empty. The read API supports the same traversal with `/api/runs?dataset=documents-directory&before=LAST_RUN_ID`, retaining its JSON list response and 200-record page size. Omitting `before` requests the first page.
+
+The cursor must identify a stored run in the selected database. Unknown or empty cursor IDs return CLI exit code **2** or API **404**, rather than restarting history. Cursor position and dataset membership are independent: a cursor from another dataset still sets the boundary, and every result must match the requested label.
+
+Newer inserts do not shift an existing cursor boundary, including ties with higher IDs. This is a live traversal; records inserted with older timestamps can appear on later pages. Use a stable local history copy when an audit needs a fixed snapshot.
 
 For a direct drill, add `--dataset documents-directory` to the existing `drill` command to attach the same label. The local read API accepts `/api/runs?dataset=documents-directory` as well. Omitting the filter returns the ordinary combined history; the dashboard's existing sample/real-run controls are unchanged.
 

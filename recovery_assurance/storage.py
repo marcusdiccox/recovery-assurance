@@ -8,6 +8,10 @@ from pathlib import Path
 from urllib.parse import quote
 
 
+class HistoryCursorNotFound(ValueError):
+    """The requested pagination anchor does not exist in this history."""
+
+
 class Store:
     def __init__(self, path: Path, *, read_only: bool = False):
         self.path = Path(path)
@@ -81,15 +85,30 @@ class Store:
                 output.unlink()
                 raise
 
-    def list(self, limit: int = 200, *, dataset: str | None = None) -> list[dict]:
+    def list(
+        self, limit: int = 200, *, dataset: str | None = None, before: str | None = None
+    ) -> list[dict]:
         query = "SELECT report FROM runs"
+        predicates = []
         parameters = []
         if dataset is not None:
-            query += " WHERE json_extract(report, '$.dataset') = ?"
+            predicates.append("json_extract(report, '$.dataset') = ?")
             parameters.append(dataset)
-        query += " ORDER BY started_at DESC LIMIT ?"
-        parameters.append(limit)
         with self._connect() as connection:
+            if before is not None:
+                if before == "":
+                    raise HistoryCursorNotFound("History cursor run not found")
+                cursor = connection.execute(
+                    "SELECT started_at, id FROM runs WHERE id = ?", (before,)
+                ).fetchone()
+                if cursor is None:
+                    raise HistoryCursorNotFound("History cursor run not found")
+                predicates.append("(started_at, id) < (?, ?)")
+                parameters.extend(cursor)
+            if predicates:
+                query += " WHERE " + " AND ".join(predicates)
+            query += " ORDER BY started_at DESC, id DESC LIMIT ?"
+            parameters.append(limit)
             rows = connection.execute(query, parameters).fetchall()
         return [json.loads(row[0]) for row in rows]
 

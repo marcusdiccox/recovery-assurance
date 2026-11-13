@@ -67,6 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.choices["list"].add_argument(
         "--dataset", help="Only list runs with this exact dataset label"
     )
+    sub.choices["list"].add_argument(
+        "--before", help="Continue history before the final run ID from a previous page"
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "capture":
@@ -100,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "demo":
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":
-            print(json.dumps(store.list(dataset=args.dataset), indent=2))
+            print(json.dumps(store.list(dataset=args.dataset, before=args.before), indent=2))
         elif args.command == "backup-history":
             store.backup_to(args.output)
             print("History backup created.")

@@ -58,7 +58,7 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `1` | Drill completed but integrity or time objective failed |
 | `2` | Configuration, restore, verification, or command error |
 
-`recovery-assurance list` prints the latest 200 records. Use `--db ./data/custom.db` on drill, run, demo, list, export, backup-history, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, demo, list, export, backup-history, and serve commands to select another database.
 
 ## Repeat a named dataset
 
