@@ -60,6 +60,8 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 
 `recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, demo, list, export, backup-history, and serve commands to select another database.
 
+Listing an existing history file uses read-only access, including filtered and paged reads. Prepared write-protected archives can be inspected without changing their schema or journal mode. A missing history path retains first-use setup: it creates an empty database and prints `[]`. An existing empty or unrelated file returns exit code **2** instead of being initialized as history.
+
 ## Repeat a named dataset
 
 Keep baseline and backup settings in a private configuration, then run a selected profile:
@@ -85,7 +87,7 @@ JSON is the default; `--format` selects the format regardless of the filename. B
 
 The output file must be new and its parent directory must already exist. Existing files are never overwritten. Unknown run IDs, missing or invalid databases, and output errors return **2**. Use `--db` to select existing history; relative database and output paths use the shell's working directory. Keep real exports private: reports can contain filenames and dataset labels. The example paths above stay under Git-ignored `data/`.
 
-Export opens the source database read-only, without initializing its schema or changing its journal mode. Readable archives can therefore be exported even when the database file is write-protected. For an archive on read-only media, prepare a consistent SQLite snapshot in rollback-journal (`DELETE`) mode before locking it down. WAL histories retain SQLite's [sidecar requirements](https://www.sqlite.org/wal.html#read_only_databases): existing readable `-wal`/`-shm` files or permission to create them may be needed. Do not separate a live database from its WAL when making an archive. Export does not convert or repair history.
+Listing an existing database and exporting a report open the source read-only, without initializing its schema or changing its journal mode. Readable archives can therefore be inspected even when the database file is write-protected. For an archive on read-only media, prepare a consistent SQLite snapshot in rollback-journal (`DELETE`) mode before locking it down. WAL histories retain SQLite's [sidecar requirements](https://www.sqlite.org/wal.html#read_only_databases): existing readable `-wal`/`-shm` files or permission to create them may be needed. Do not separate a live database from its WAL when making an archive. These reads do not convert or repair history.
 
 ## Back up run history
 

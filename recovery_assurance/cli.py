@@ -77,7 +77,9 @@ def main(argv: list[str] | None = None) -> int:
             save_manifest(manifest, args.manifest)
             print(f"Captured {len(manifest['files'])} files. Baseline: {args.manifest}")
             return 0
-        read_only = args.command in ("export", "backup-history")
+        read_only = args.command in ("export", "backup-history") or (
+            args.command == "list" and args.db.is_file()
+        )
         if read_only and not args.db.is_file():
             raise ValueError("Database does not exist; select an existing history with --db")
         store = Store(args.db, read_only=read_only)

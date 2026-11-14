@@ -32,6 +32,8 @@ The cursor must identify a stored run in the selected database. Unknown or empty
 
 Newer inserts do not shift an existing cursor boundary, including ties with higher IDs. This is a live traversal; records inserted with older timestamps can appear on later pages. Use a stable local history copy when an audit needs a fixed snapshot.
 
+CLI `list --db ARCHIVE` opens an existing history file read-only, so dataset filters, pagination, and rejected cursors preserve a prepared archive's database bytes and journal mode. Write-protected files are supported when SQLite can read them; WAL histories retain the [sidecar requirements described in the README](../README.md#export-saved-evidence-from-the-cli). An existing file without initialized history is rejected rather than given a new runs table.
+
 For a direct drill, add `--dataset documents-directory` to the existing `drill` command to attach the same label. The local read API accepts `/api/runs?dataset=documents-directory` as well. Omitting the filter returns the ordinary combined history; the dashboard's existing sample/real-run controls are unchanged.
 
 Dataset labels are local database groupings, not globally registered IDs. Reusing the same key across config files combines their history, so choose distinct keys when that is not intended. Renaming a profile key starts a new grouping; changing only its `name` keeps the grouping. Older reports and unlabelled direct/sample drills remain visible in combined history and are not retroactively assigned to a profile. Choose non-sensitive labels when exporting public portfolio evidence.
