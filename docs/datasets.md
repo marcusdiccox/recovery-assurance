@@ -62,4 +62,4 @@ The root object has `schema_version: 1` and a `datasets` object keyed by dataset
 
 The file must be UTF-8, with or without a BOM, and no larger than 1 MiB. Duplicate JSON keys, unknown settings, and invalid field types are rejected. Only the selected profile's settings are validated; an unused profile cannot change the selected drill. Snapshot and display-name rules remain enforced by the existing drill engine. Profiles never create or update baseline manifests, and they do not create backups.
 
-This command supplies repeatable inputs. It does not install a scheduler, retry work, apply retention policies, or provision cloud resources. Windows Task Scheduler or cron can invoke it using the same exit-code contract as `drill`.
+This command supplies repeatable inputs. It does not install a scheduler, retry work, apply retention policies, or provision cloud resources. Windows Task Scheduler or cron can invoke it using the same exit-code contract as `drill`; see the [host scheduling runbook](scheduling.md) for setup and verification recipes.

@@ -74,6 +74,8 @@ Local backup and manifest paths resolve relative to the configuration file, so t
 
 Profile keys are saved as dataset labels in evidence. Use `recovery-assurance list --dataset documents-directory --db ./data/runs.db` to review that dataset's latest 200 records. Direct drills can opt in with `--dataset`; older and unlabelled records remain in combined history.
 
+See the [host scheduling runbook](docs/scheduling.md) for Windows Task Scheduler and Linux cron recipes, local overlap controls, account/path setup, exit-code handling and evidence checks.
+
 ## Export saved evidence from the CLI
 
 Export a recorded run without starting the dashboard or repeating the restore. Replace `RUN_ID` with the `id` printed by a drill or `list`:
