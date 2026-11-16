@@ -9,6 +9,7 @@ from pathlib import Path
 from .config import load_dataset
 from .core import capture, load_manifest, run_drill, save_manifest
 from .demo import seed_demo
+from .locking import DrillLockBusy, drill_lock
 from .reports import html_report
 from .storage import Store
 
@@ -42,6 +43,12 @@ def main(argv: list[str] | None = None) -> int:
     configured = sub.add_parser("run", help="Run a named dataset from a JSON configuration")
     configured.add_argument("config", type=Path, help="Dataset configuration file")
     configured.add_argument("--dataset", required=True, help="Dataset name in the configuration")
+    for command in (drill, configured):
+        command.add_argument(
+            "--lock-file",
+            type=Path,
+            help="Skip with exit 75 if another drill holds this local .lock file",
+        )
     exporter = sub.add_parser("export", help="Export a saved run without rerunning the drill")
     exporter.add_argument("run_id", help="ID from a drill report or the history list")
     exporter.add_argument("--format", choices=["json", "html"], default="json")
@@ -77,31 +84,33 @@ def main(argv: list[str] | None = None) -> int:
             save_manifest(manifest, args.manifest)
             print(f"Captured {len(manifest['files'])} files. Baseline: {args.manifest}")
             return 0
+        if args.command in ("drill", "run"):
+            with drill_lock(args.lock_file, database=args.db):
+                store = Store(args.db)
+                if args.command == "run":
+                    options = load_dataset(args.config, args.dataset)
+                    manifest_path = options.pop("manifest")
+                else:
+                    manifest_path = args.manifest
+                    options = {
+                        "backup": args.backup,
+                        "name": args.name,
+                        "rto_seconds": args.rto_seconds,
+                        "backend": args.backend,
+                        "snapshot": args.snapshot,
+                        "timeout": args.timeout,
+                    }
+                report = run_drill(
+                    load_manifest(manifest_path), store=store, dataset=args.dataset, **options
+                )
+                print(json.dumps(report, indent=2))
+                return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
         read_only = args.command in ("export", "backup-history") or (
             args.command == "list" and args.db.is_file()
         )
         if read_only and not args.db.is_file():
             raise ValueError("Database does not exist; select an existing history with --db")
         store = Store(args.db, read_only=read_only)
-        if args.command in ("drill", "run"):
-            if args.command == "run":
-                options = load_dataset(args.config, args.dataset)
-                manifest_path = options.pop("manifest")
-            else:
-                manifest_path = args.manifest
-                options = {
-                    "backup": args.backup,
-                    "name": args.name,
-                    "rto_seconds": args.rto_seconds,
-                    "backend": args.backend,
-                    "snapshot": args.snapshot,
-                    "timeout": args.timeout,
-                }
-            report = run_drill(
-                load_manifest(manifest_path), store=store, dataset=args.dataset, **options
-            )
-            print(json.dumps(report, indent=2))
-            return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
         if args.command == "demo":
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":
@@ -129,6 +138,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Dashboard: http://127.0.0.1:{args.port}")
             uvicorn.run(create_app(args.db), host="127.0.0.1", port=args.port)
         return 0
+    except DrillLockBusy as error:
+        print(f"Skipped: {error}", file=sys.stderr)
+        return 75
     except (OSError, ValueError, sqlite3.Error) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 2

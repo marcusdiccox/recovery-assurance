@@ -23,6 +23,7 @@ flowchart LR
 | `demo.py` | Synthetic fixtures and genuine successful / failed recovery drills |
 | `cli.py` | Capture, direct/profile drills, list, saved-evidence export, history backup, demo, and loopback server commands |
 | `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
+| `locking.py` | Optional nonblocking local drill coordination with a persistent empty lock file |
 | `web.py` | Read APIs, local sample drill action, report downloads, static assets |
 | `reports.py` | Escaped, self-contained HTML evidence |
 | `static/` | Dependency-free dashboard, accessible controls, native dialogs, SVG chart |
@@ -36,6 +37,8 @@ flowchart LR
 **All checks must pass.** A fast restore with changed files fails. A correct restore outside its objective fails. A failed backend is an error record, never a successful empty comparison. Empty manifests cannot establish recovery success.
 
 **Temporary restore destinations.** Every drill gets a fresh directory; original data is not overwritten. Temporary files are removed before a successful run is finalized. The end-to-end timer includes cleanup and excludes report persistence.
+
+**Opt-in local overlap control.** CLI `run`/`drill --lock-file` enter a lock context before Store initialization or input loading and hold it through report persistence/output. Windows uses a nonblocking one-byte `msvcrt.locking` region at offset zero, including on an empty file; Unix uses `fcntl.flock(LOCK_EX | LOCK_NB)`. Busy acquisition becomes exit 75 without a run record. Other lock/input errors retain exit 2. The context unlocks on all ordinary outcomes and closes the handle; no PID contents or file deletion are used for ownership. The lock file must be empty, end in `.lock`, and be separate from database/sidecar paths and file identities. This is cooperative same-host coordination on trusted local storage, not a scheduler queue or distributed lease.
 
 **A boring local stack.** Python, FastAPI, SQLite, and plain JavaScript keep the first version easy to run and inspect. SQLite uses per-operation connections and WAL. There is no frontend build service or third-party analytics.
 

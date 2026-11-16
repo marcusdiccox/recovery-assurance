@@ -14,9 +14,11 @@ Saved evidence can now be exported from the CLI as JSON or standalone HTML witho
 
 Full history can now be copied with `backup-history` into a standalone SQLite archive, including committed WAL records and history beyond the latest-200 view. Source access is read-only and existing destinations are protected.
 
+Direct/profile CLI drills now optionally share a local OS lock with `--lock-file`; an overlapping invocation skips with exit 75 before starting a drill. Callers choose the coordination path explicitly.
+
 ## Next — make evidence operational
 
-- Durable job scheduling, concurrency limits, and retry policy for real drills.
+- Durable job scheduling, worker concurrency limits beyond the optional local CLI guard, and retry policy for real drills.
 - Registered dataset identities and an explicit baseline-to-snapshot catalog beyond run history.
 - Retention policies, signed evidence, and external report delivery beyond local exports.
 - File-level progress and cancellation for large datasets.

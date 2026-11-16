@@ -12,6 +12,8 @@ Use a named profile for repeatable drills after a backup has finished and its ma
 
 A manual preflight should exercise the same account, executable, profile and database as the scheduled action. Confirm that a new run appears in that exact database before enabling repetition.
 
+Use the same absolute `--lock-file` path for scheduled and manual invocations of a workload when they must not overlap. The file must be a dedicated empty local `.lock` file in a trusted directory; it remains between runs. Contention returns 75 without starting a drill or creating a run record. This guard uses native OS locks on [Windows](https://docs.python.org/3.12/library/msvcrt.html#msvcrt.locking) and [Unix](https://docs.python.org/3.12/library/fcntl.html#fcntl.flock), and does not coordinate calls that omit the option. Do not remove the file while processes may be using it.
+
 ## Windows Task Scheduler
 
 In **Create Task**, choose a unique name such as `RecoveryAssurance-Finance` and the account prepared above. For unattended execution, select the host's run-when-logged-out option and supply required credentials locally according to its policy. Elevated privileges are not a substitute for granting the required access.
@@ -21,7 +23,7 @@ For a **Start a program** action, replace these example values:
 | Field | Value |
 |---|---|
 | Program/script | `C:\Tools\recovery-assurance\.venv\Scripts\python.exe` |
-| Arguments | `-m recovery_assurance run "C:\Private\Recovery\datasets.local.json" --dataset finance --db "C:\Private\Recovery\runs.db"` |
+| Arguments | `-m recovery_assurance run "C:\Private\Recovery\datasets.local.json" --dataset finance --db "C:\Private\Recovery\runs.db" --lock-file "C:\Private\Recovery\finance.lock"` |
 | Start in | `C:\Tools\recovery-assurance` |
 
 Keep the executable separate from its arguments and quote argument paths containing spaces. Shell redirection such as `>` is not part of this direct Python action. Task Scheduler does not save Python stdout automatically; inspect persisted evidence and task results, or provide a private logging wrapper when needed. See Microsoft's [action definition reference](https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/new-scheduledtaskaction?view=windowsserver2025-ps).
@@ -32,18 +34,19 @@ Add a daily trigger at the intended host-local time, for example 09:00, after th
 $drillPython = 'C:\Tools\recovery-assurance\.venv\Scripts\python.exe'
 $drillConfig = 'C:\Private\Recovery\datasets.local.json'
 $drillDb = 'C:\Private\Recovery\runs.db'
-$drillArguments = '-m recovery_assurance run "{0}" --dataset finance --db "{1}"' -f $drillConfig, $drillDb
+$drillLock = 'C:\Private\Recovery\finance.lock'
+$drillArguments = '-m recovery_assurance run "{0}" --dataset finance --db "{1}" --lock-file "{2}"' -f $drillConfig, $drillDb, $drillLock
 $drillAction = New-ScheduledTaskAction -Execute $drillPython -Argument $drillArguments -WorkingDirectory 'C:\Tools\recovery-assurance'
 $drillSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
 ```
 
-The 30-minute limit is an example, not a tested production duration. `IgnoreNew` applies to that task registration; a separate task or manual CLI invocation can still overlap. Review the host's power, network and logon conditions and [settings behavior](https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/new-scheduledtasksettingsset?view=windowsserver2025-ps). Avoid automatic retries until failures have been classified: an integrity failure is not fixed by repeating the same restore.
+The 30-minute limit is an example, not a tested production duration. `IgnoreNew` applies to that task registration; the CLI guard extends coordination to other invocations using the same lock path. Review the host's power, network and logon conditions and [settings behavior](https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/new-scheduledtasksettingsset?view=windowsserver2025-ps). Avoid automatic retries until failures have been classified: an integrity failure is not fixed by repeating the same restore.
 
 Save the task through Task Scheduler, run it once on demand, and inspect **Last Run Result**, its history and the corresponding database record. A launcher/account failure may produce a host error code rather than a CLI exit code. A task forcibly stopped by the scheduler can have no completed evidence record.
 
-## Linux cron with a local overlap lock
+## Linux cron with the CLI overlap guard
 
-Prepare private, account-writable database/log directories and install util-linux `flock`. Save this wrapper at `/opt/recovery-assurance/run-finance-drill.sh`, replacing the paths and profile key. The wrapper captures the command's exit status before writing the log marker:
+Prepare private, account-writable database/log directories. Save this wrapper at `/opt/recovery-assurance/run-finance-drill.sh`, replacing the paths and profile key. The wrapper captures the command's exit status before writing the log marker:
 
 ```sh
 #!/bin/sh
@@ -56,11 +59,10 @@ RESTIC_PASSWORD_FILE=/etc/recovery-assurance/restic-password.txt
 export RESTIC_PASSWORD_FILE
 drill_log=/var/log/recovery-assurance/finance.log
 
-/usr/bin/flock --nonblock --conflict-exit-code 75 \
-  /var/lib/recovery-assurance/finance.lock \
-  /opt/recovery-assurance/.venv/bin/python -m recovery_assurance run \
+/opt/recovery-assurance/.venv/bin/python -m recovery_assurance run \
   /etc/recovery-assurance/datasets.local.json --dataset finance \
-  --db /var/lib/recovery-assurance/runs.db >>"$drill_log" 2>&1
+  --db /var/lib/recovery-assurance/runs.db \
+  --lock-file /var/lib/recovery-assurance/finance.lock >>"$drill_log" 2>&1
 drill_status=$?
 printf '%s scheduler_exit=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$drill_status" >>"$drill_log"
 exit "$drill_status"
@@ -76,7 +78,7 @@ In the prepared account's user crontab, a daily 09:00 entry is:
 
 Check the daemon's timezone and missed-run behavior on the host. Do not assume its environment matches an interactive shell. Refer to the host's [crontab format](https://manpages.debian.org/trixie/cron/crontab.5.en.html).
 
-All scheduled invocations for this profile must use the same local lock path. `flock` holds the lock around the child command; conflict exit **75** means the wrapper skipped a run because another holder was active. Leave the lock file in place between runs: the lock is released when its holder closes it. A direct invocation without this lock is not coordinated, and this is not a cross-host worker lock. See the [util-linux flock reference](https://man7.org/linux/man-pages/man1/flock.1.html).
+All invocations for this workload must use the same local lock path. Conflict exit **75** means no drill started because another holder was active. A direct invocation without `--lock-file` is not coordinated, and this is not a cross-host worker lock. If retaining an external `flock` wrapper, omit the CLI guard or use a different outer lock file: nesting both on the same file makes the inner acquisition conflict with the outer holder.
 
 ## Check outcomes, not just launches
 
@@ -85,7 +87,7 @@ All scheduled invocations for this profile must use the same local lock path. `f
 | CLI `0` | Drill passed; inspect its run ID, dataset, baseline fingerprint and selected snapshot evidence. |
 | CLI `1` | Integrity or recovery-time objective failed; review the findings before retrying. |
 | CLI `2` | Input or execution error; inspect private stderr/logs and the report when one was created. A config error may create no run. |
-| Wrapper `75` | Local lock conflict; no drill started through that wrapper. Check the current holder and expected duration. |
+| CLI `75` | Local lock conflict; no drill started. Check the current holder and expected duration. |
 | Host/startup/forced-stop error | Inspect scheduler history and account/path/availability conditions; a finished report is not guaranteed. |
 
 After a launch, query the configured database explicitly:
@@ -96,8 +98,10 @@ recovery-assurance list --dataset finance --db /var/lib/recovery-assurance/runs.
 
 Use the Windows database path instead on Windows. Check that the record is new and has the expected dataset and baseline; an old passing row does not prove the latest scheduled invocation succeeded. For an identified run, use `export RUN_ID --db DATABASE --output NEW_REPORT_FILE` to collect evidence. Keep evidence archiving separate from the scheduled restore and use a new `backup-history` destination each time.
 
-The profile's `timeout` bounds restic lookup/restore, while its RTO is a pass/fail target. Neither is a whole-job scheduler deadline. Host scheduling, locking and logs do not themselves provide alerts, offsite evidence storage or retries; arrange those operational policies separately.
+The profile's `timeout` bounds restic lookup/restore, while its RTO is a pass/fail target. Neither is a whole-job scheduler deadline. A lock being released after process termination does not certify that a forced-stop restore cleaned up or persisted evidence; inspect the job before retrying. Host scheduling, locking and logs do not themselves provide alerts, offsite evidence storage or retries; arrange those operational policies separately.
 
 ## Validation scope
 
-Windows action/settings objects were constructed locally, and the equivalent direct process invocation was exercised with synthetic data, absolute config/database paths containing spaces and a different working directory. Exit codes 0/1/2 were observed, with two completed records persisted for the successful and integrity-failed drills. PowerShell snippets and the POSIX wrapper parsed successfully, the latter through Git sh. No scheduled task was registered or triggered during validation. The Linux wrapper/cron recipe follows the cited host tools; it was not executed locally, and unattended account access, timed triggers and cross-host coordination are not claimed as tested.
+On November 15, 2026, Windows action/settings objects were constructed locally, and the equivalent direct process invocation was exercised with synthetic data, absolute config/database paths containing spaces and a different working directory. Exit codes 0/1/2 were observed, with two completed records persisted for the successful and integrity-failed drills.
+
+On November 16, separate Windows CLI processes exercised lock contention (75 before database/input access), release after ordinary outcomes, reuse after terminating a holder, independent lock paths and rejected inputs. The same process tests run in Ubuntu CI; consult the [revision's Actions results](https://github.com/marcusdiccox/recovery-assurance/actions) for execution evidence. The updated PowerShell snippets and POSIX wrapper parsed successfully, the latter through Git sh. No scheduled task was registered or triggered, and the Linux wrapper/cron recipe was not executed locally. Unattended account access, timed triggers and cross-host coordination are not claimed as tested.

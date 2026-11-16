@@ -57,6 +57,7 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `0` | Drill passed; other commands completed successfully |
 | `1` | Drill completed but integrity or time objective failed |
 | `2` | Configuration, restore, verification, or command error |
+| `75` | Requested drill lock is held; this invocation skipped without starting a drill |
 
 `recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, demo, list, export, backup-history, and serve commands to select another database.
 
@@ -75,6 +76,10 @@ Local backup and manifest paths resolve relative to the configuration file, so t
 Profile keys are saved as dataset labels in evidence. Use `recovery-assurance list --dataset documents-directory --db ./data/runs.db` to review that dataset's latest 200 records. Direct drills can opt in with `--dataset`; older and unlabelled records remain in combined history.
 
 See the [host scheduling runbook](docs/scheduling.md) for Windows Task Scheduler and Linux cron recipes, local overlap controls, account/path setup, exit-code handling and evidence checks.
+
+To coordinate scheduled and manual invocations on one host, add `--lock-file ./data/documents.lock` to `run` or `drill`. Every invocation for that workload must use the same path. The optional guard acquires a nonblocking OS lock before opening history or validating drill inputs; contention returns **75**, prints a skip reason to stderr, and records no run. Normal drill outcomes retain codes **0/1/2**. The path is relative to the working directory, so use an absolute path in schedulers.
+
+Use a dedicated new or empty local file ending in `.lock`; symlinks, nonempty files and history/SQLite-sidecar aliases are rejected. Parent directories are created if needed. The file stays in place and contains no PID or credentials; the OS lock is released when its holder closes or exits. Keep it in a trusted local directory and do not delete or replace it while invocations may be active. This coordinates cooperating CLI invocations, not other hosts or calls that omit the option.
 
 ## Export saved evidence from the CLI
 

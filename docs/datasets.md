@@ -43,7 +43,7 @@ Dataset labels are local database groupings, not globally registered IDs. Reusin
 - Relative manifest paths and bare local backup paths resolve against the configuration file's directory, including for local restic repositories. They are independent of the shell's working directory.
 - Absolute local paths are accepted. Paths must be valid on the operating system running the command. Windows drive-relative paths such as `C:backup` are rejected; use `C:/backups/finance` or `./backup`.
 - Restic repository URIs, such as `azure:recovery:/documents`, are passed unchanged. Use an absolute repository location within the URI when its backend supports relative locations.
-- `--db` keeps its ordinary CLI behavior: a relative database path resolves against the working directory. For a scheduler, use absolute paths for the config file and `--db`.
+- `--db` and optional `--lock-file` resolve relative paths against the working directory. For a scheduler, use absolute paths for the config file and both options. The lock is a CLI option, not a dataset configuration field.
 - The loader does not expand shell variables, environment variables, or `~` inside JSON strings.
 
 ## Fields
