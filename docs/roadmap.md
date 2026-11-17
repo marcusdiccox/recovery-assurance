@@ -16,6 +16,8 @@ Full history can now be copied with `backup-history` into a standalone SQLite ar
 
 Direct/profile CLI drills now optionally share a local OS lock with `--lock-file`; an overlapping invocation skips with exit 75 before starting a drill. Callers choose the coordination path explicitly.
 
+Saved-evidence health checks now assess the latest real run for an exact dataset against a caller-chosen age limit. JSON and exit codes support host monitoring scripts; scheduler state and alert delivery remain separate work.
+
 ## Next — make evidence operational
 
 - Durable job scheduling, worker concurrency limits beyond the optional local CLI guard, and retry policy for real drills.

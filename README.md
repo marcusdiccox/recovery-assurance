@@ -55,11 +55,11 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | Exit code | Meaning |
 |---|---|
 | `0` | Drill passed; other commands completed successfully |
-| `1` | Drill completed but integrity or time objective failed |
+| `1` | Drill failed an objective, or a saved-evidence health check is unhealthy |
 | `2` | Configuration, restore, verification, or command error |
 | `75` | Requested drill lock is held; this invocation skipped without starting a drill |
 
-`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, demo, list, export, backup-history, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, check, demo, list, export, backup-history, and serve commands to select another database.
 
 Listing an existing history file uses read-only access, including filtered and paged reads. Prepared write-protected archives can be inspected without changing their schema or journal mode. A missing history path retains first-use setup: it creates an empty database and prints `[]`. An existing empty or unrelated file returns exit code **2** instead of being initialized as history.
 
@@ -80,6 +80,20 @@ See the [host scheduling runbook](docs/scheduling.md) for Windows Task Scheduler
 To coordinate scheduled and manual invocations on one host, add `--lock-file ./data/documents.lock` to `run` or `drill`. Every invocation for that workload must use the same path. The optional guard acquires a nonblocking OS lock before opening history or validating drill inputs; contention returns **75**, prints a skip reason to stderr, and records no run. Normal drill outcomes retain codes **0/1/2**. The path is relative to the working directory, so use an absolute path in schedulers.
 
 Use a dedicated new or empty local file ending in `.lock`; symlinks, nonempty files and history/SQLite-sidecar aliases are rejected. Parent directories are created if needed. The file stays in place and contains no PID or credentials; the OS lock is released when its holder closes or exits. Keep it in a trusted local directory and do not delete or replace it while invocations may be active. This coordinates cooperating CLI invocations, not other hosts or calls that omit the option.
+
+## Check saved evidence for monitoring
+
+Check whether one dataset has a recent passing real drill without performing another restore:
+
+```sh
+recovery-assurance check --dataset finance --max-age-hours 25 --db ./data/runs.db
+```
+
+Choose a finite positive age limit for your own schedule; 25 hours is an example policy with an hour of margin for a daily drill. The command prints JSON with `healthy`, `reasons`, `dataset`, `max_age_hours`, `run_id`, `run_status`, `finished_at` and `age_hours`, plus `schema_version: 1`. Exit **0** means the selected evidence is fresh and passed; **1** means `no_evidence`, `stale`, `latest_run_failed` or `latest_run_error` (reasons can combine). An assessment without evidence has null run/time fields. Exit **2** means the check could not assess health, such as missing/unreadable history, an invalid age policy or unusable latest-run metadata; errors go to stderr without JSON.
+
+Selection uses the exact dataset label and requires JSON `sample: false`; synthetic demos and records without that explicit marker do not count. Filtering happens before selecting one row, so unrelated or sample activity cannot hide real evidence. The newest run is determined by stored start time descending, then run ID descending, as in history. A newer failure/error is not replaced by an older success. Age uses timezone-aware `finished_at`; exactly the age limit is still fresh. Reversed, future or missing timestamps, contradictory passing flags and decoded dataset/sample metadata that disagrees with selection return **2**, rather than healthy evidence. Keep host clocks synchronized.
+
+Existing history is opened read-only without initialization or journal conversion; a missing path is an error and is not created. SQLite WAL sidecar/access requirements still apply. This checks recorded evidence, not whether a scheduler launched, whether a drill is currently running, backup freshness/RPO or application recovery. An attempt that produced no evidence is only detectable here once saved evidence exceeds the chosen age limit. No alerts or monitoring service are installed; a host monitoring script can consume the exit code and JSON.
 
 ## Export saved evidence from the CLI
 

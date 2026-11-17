@@ -100,6 +100,14 @@ Use the Windows database path instead on Windows. Check that the record is new a
 
 The profile's `timeout` bounds restic lookup/restore, while its RTO is a pass/fail target. Neither is a whole-job scheduler deadline. A lock being released after process termination does not certify that a forced-stop restore cleaned up or persisted evidence; inspect the job before retrying. Host scheduling, locking and logs do not themselves provide alerts, offsite evidence storage or retries; arrange those operational policies separately.
 
+For a separate monitoring probe, use an absolute database path and an explicit age policy:
+
+```sh
+recovery-assurance check --dataset finance --max-age-hours 25 --db /var/lib/recovery-assurance/runs.db
+```
+
+Use the corresponding Windows database path on Windows. For example, 25 hours permits an hour of margin beyond a daily schedule; choose your own limit. Exit 0 means the latest real record is passing and fresh, exit 1 means missing/stale/failed/error evidence, and exit 2 means the assessment could not be made. Capture the JSON `reasons` and run ID in private monitoring logs. Demo records do not count. This read-only probe assesses saved evidence, not scheduler launches or active jobs; a launch/configuration failure with no report is detected only after evidence becomes stale. It installs no monitor or alert destination. See the [complete check contract](../README.md#check-saved-evidence-for-monitoring) for ordering, timestamp and archive requirements.
+
 ## Validation scope
 
 On November 15, 2026, Windows action/settings objects were constructed locally, and the equivalent direct process invocation was exercised with synthetic data, absolute config/database paths containing spaces and a different working directory. Exit codes 0/1/2 were observed, with two completed records persisted for the successful and integrity-failed drills.

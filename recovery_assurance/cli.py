@@ -9,6 +9,7 @@ from pathlib import Path
 from .config import load_dataset
 from .core import capture, load_manifest, run_drill, save_manifest
 from .demo import seed_demo
+from .health import check_health
 from .locking import DrillLockBusy, drill_lock
 from .reports import html_report
 from .storage import Store
@@ -43,6 +44,11 @@ def main(argv: list[str] | None = None) -> int:
     configured = sub.add_parser("run", help="Run a named dataset from a JSON configuration")
     configured.add_argument("config", type=Path, help="Dataset configuration file")
     configured.add_argument("--dataset", required=True, help="Dataset name in the configuration")
+    health = sub.add_parser("check", help="Check freshness and outcome of saved dataset evidence")
+    health.add_argument("--dataset", required=True, help="Exact dataset label to monitor")
+    health.add_argument(
+        "--max-age-hours", required=True, type=float, help="Positive maximum age since completion"
+    )
     for command in (drill, configured):
         command.add_argument(
             "--lock-file",
@@ -62,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     for command in (
         drill,
         configured,
+        health,
         exporter,
         history_backup,
         sub.add_parser("demo", help="Execute three drills with synthetic files"),
@@ -105,12 +112,16 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 print(json.dumps(report, indent=2))
                 return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
-        read_only = args.command in ("export", "backup-history") or (
+        read_only = args.command in ("export", "backup-history", "check") or (
             args.command == "list" and args.db.is_file()
         )
         if read_only and not args.db.is_file():
             raise ValueError("Database does not exist; select an existing history with --db")
         store = Store(args.db, read_only=read_only)
+        if args.command == "check":
+            result = check_health(store, dataset=args.dataset, max_age_hours=args.max_age_hours)
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result["healthy"] else 1
         if args.command == "demo":
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":

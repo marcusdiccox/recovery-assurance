@@ -112,6 +112,17 @@ class Store:
             rows = connection.execute(query, parameters).fetchall()
         return [json.loads(row[0]) for row in rows]
 
+    def latest_real_run(self, dataset: str) -> dict | None:
+        """Find real evidence before limiting, using the same ordering as history."""
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT report FROM runs WHERE json_extract(report, '$.dataset') = ? "
+                "AND json_type(report, '$.sample') = 'false' "
+                "ORDER BY started_at DESC, id DESC LIMIT 1",
+                (dataset,),
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
     def get(self, run_id: str) -> dict | None:
         with self._connect() as connection:
             row = connection.execute("SELECT report FROM runs WHERE id = ?", (run_id,)).fetchone()

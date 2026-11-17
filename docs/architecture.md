@@ -21,9 +21,10 @@ flowchart LR
 | `core.py` | Baseline validation, streaming hashes, backend invocation, comparison, timings |
 | `storage.py` | Parameterized SQLite inserts, bounded history reads, optional read-only connections, and consistent history copies |
 | `demo.py` | Synthetic fixtures and genuine successful / failed recovery drills |
-| `cli.py` | Capture, direct/profile drills, list, saved-evidence export, history backup, demo, and loopback server commands |
+| `cli.py` | Capture, direct/profile drills, saved-evidence health checks, list, export, history backup, demo, and loopback server commands |
 | `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
 | `locking.py` | Optional nonblocking local drill coordination with a persistent empty lock file |
+| `health.py` | Freshness/outcome assessment of the latest real dataset evidence for CLI monitoring |
 | `web.py` | Read APIs, local sample drill action, report downloads, static assets |
 | `reports.py` | Escaped, self-contained HTML evidence |
 | `static/` | Dependency-free dashboard, accessible controls, native dialogs, SVG chart |
@@ -41,6 +42,8 @@ flowchart LR
 **Opt-in local overlap control.** CLI `run`/`drill --lock-file` enter a lock context before Store initialization or input loading and hold it through report persistence/output. Windows uses a nonblocking one-byte `msvcrt.locking` region at offset zero, including on an empty file; Unix uses `fcntl.flock(LOCK_EX | LOCK_NB)`. Busy acquisition becomes exit 75 without a run record. Other lock/input errors retain exit 2. The context unlocks on all ordinary outcomes and closes the handle; no PID contents or file deletion are used for ownership. The lock file must be empty, end in `.lock`, and be separate from database/sidecar paths and file identities. This is cooperative same-host coordination on trusted local storage, not a scheduler queue or distributed lease.
 
 **A boring local stack.** Python, FastAPI, SQLite, and plain JavaScript keep the first version easy to run and inspect. SQLite uses per-operation connections and WAL. There is no frontend build service or third-party analytics.
+
+**Read-only monitoring.** CLI `check` uses an existing read-only Store and `latest_real_run(dataset)`. A bound exact dataset predicate and JSON `sample:false` predicate precede `LIMIT 1`; start-time/ID ordering matches history. `check_health` evaluates the chosen record's outcome and completion age against an explicit positive policy. Missing evidence, stale evidence and latest failed/error runs produce unhealthy JSON/exit 1. Invalid policy/history or unusable timestamp/outcome metadata produces exit 2. No previous passing fallback, restore, row write, scheduler state, alert delivery or schema migration is involved.
 
 **Narrow browser authority.** Real filesystem paths and backup credentials are not browser inputs. The demo mutation requires an explicit header and same-origin requests. Trusted hosts and a restrictive dashboard CSP reduce exposure; these controls do not replace authentication for a future hosted service.
 
