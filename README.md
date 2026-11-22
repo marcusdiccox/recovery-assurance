@@ -43,6 +43,8 @@ Use stable test data. Capture a baseline **at the time the backup snapshot is cr
 
 Baseline files use UTF-8 JSON, with or without a BOM, and integer `schema_version: 1`. Duplicate keys at any level, including repeated file paths or checksum fields, are rejected. A rejected baseline returns exit code **2** before restoring files or appending run evidence.
 
+Optional per-file annotations are preserved and included in the baseline fingerprint. Content verification compares each path's required byte size and SHA-256, so annotations such as an operator note do not make unchanged files fail. Annotation values are not checks of restored ownership, permissions or other filesystem metadata.
+
 ```powershell
 recovery-assurance capture ./source --manifest ./baseline-2026-11-03.json
 # Create your backup snapshot separately; this tool does not schedule backups.

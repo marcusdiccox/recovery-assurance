@@ -130,7 +130,11 @@ def compare(manifest: dict, restored: Path) -> dict:
     actual = {p.relative_to(restored).as_posix(): _fingerprint(p) for p in _files(restored)}
     expected = manifest["files"]
     common = set(expected) & set(actual)
-    changed = sorted(name for name in common if expected[name] != actual[name])
+    changed = sorted(
+        name
+        for name in common
+        if any(expected[name][key] != actual[name][key] for key in ("size", "sha256"))
+    )
     return {
         "matched": len(common) - len(changed),
         "changed": changed,

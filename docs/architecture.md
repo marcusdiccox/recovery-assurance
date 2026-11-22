@@ -37,6 +37,8 @@ flowchart LR
 
 **All checks must pass.** A fast restore with changed files fails. A correct restore outside its objective fails. A failed backend is an error record, never a successful empty comparison. Empty manifests cannot establish recovery success.
 
+**Content fields and annotations.** For a common path, `compare` checks the validated `size` and `sha256` fields against the restored fingerprint. Optional entry annotations remain in the manifest and its canonical fingerprint, but are not compared as filesystem metadata. They cannot override a mismatching required size or checksum. Missing and unexpected path detection is unchanged.
+
 **Temporary restore destinations.** Every drill gets a fresh directory; original data is not overwritten. Temporary files are removed before a successful run is finalized. The end-to-end timer includes cleanup and excludes report persistence.
 
 **Opt-in local overlap control.** CLI `run`/`drill --lock-file` enter a lock context before Store initialization or input loading and hold it through report persistence/output. Windows uses a nonblocking one-byte `msvcrt.locking` region at offset zero, including on an empty file; Unix uses `fcntl.flock(LOCK_EX | LOCK_NB)`. Busy acquisition becomes exit 75 without a run record. Other lock/input errors retain exit 2. The context unlocks on all ordinary outcomes and closes the handle; no PID contents or file deletion are used for ownership. The lock file must be empty, end in `.lock`, and be separate from database/sidecar paths and file identities. This is cooperative same-host coordination on trusted local storage, not a scheduler queue or distributed lease.
