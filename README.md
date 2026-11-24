@@ -45,6 +45,8 @@ Baseline files use UTF-8 JSON, with or without a BOM, and integer `schema_versio
 
 Optional per-file annotations are preserved and included in the baseline fingerprint. Content verification compares each path's required byte size and SHA-256, so annotations such as an operator note do not make unchanged files fail. Annotation values are not checks of restored ownership, permissions or other filesystem metadata.
 
+Baseline saves create a new file exclusively. Handled serialization, write or close failures remove the new partial output when its file identity can be verified; existing destinations and replaced paths are left alone. Cleanup errors are reported. Missing file identity or abrupt termination can still leave output to inspect, so use a baseline only after capture succeeds.
+
 ```powershell
 recovery-assurance capture ./source --manifest ./baseline-2026-11-03.json
 # Create your backup snapshot separately; this tool does not schedule backups.

@@ -101,8 +101,24 @@ def _validate(manifest: dict) -> None:
 
 def save_manifest(manifest: dict, path: Path) -> None:
     _validate(manifest)
-    with Path(path).open("x", encoding="utf-8") as stream:
-        json.dump(manifest, stream, indent=2, allow_nan=False)
+    path = Path(path)
+    # An existing destination is never eligible for failure cleanup.
+    stream = path.open("x", encoding="utf-8")
+    created = None
+    try:
+        with stream:
+            created = os.fstat(stream.fileno())
+            json.dump(manifest, stream, indent=2, allow_nan=False)
+    except BaseException:
+        if created is not None and created.st_ino:
+            try:
+                current = path.lstat()
+            except FileNotFoundError:
+                pass
+            else:
+                if (current.st_dev, current.st_ino) == (created.st_dev, created.st_ino):
+                    path.unlink()
+        raise
 
 
 def _unique_manifest_keys(pairs):
