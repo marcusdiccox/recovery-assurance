@@ -63,7 +63,7 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `2` | Configuration, restore, verification, or command error |
 | `75` | Requested drill lock is held; this invocation skipped without starting a drill |
 
-`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, check, demo, list, export, backup-history, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, check, demo, list, datasets, export, backup-history, and serve commands to select another database.
 
 Listing an existing history file uses read-only access, including filtered and paged reads. Prepared write-protected archives can be inspected without changing their schema or journal mode. A missing history path retains first-use setup: it creates an empty database and prints `[]`. An existing empty or unrelated file returns exit code **2** instead of being initialized as history.
 
@@ -84,6 +84,20 @@ See the [host scheduling runbook](docs/scheduling.md) for Windows Task Scheduler
 To coordinate scheduled and manual invocations on one host, add `--lock-file ./data/documents.lock` to `run` or `drill`. Every invocation for that workload must use the same path. The optional guard acquires a nonblocking OS lock before opening history or validating drill inputs; contention returns **75**, prints a skip reason to stderr, and records no run. Normal drill outcomes retain codes **0/1/2**. The path is relative to the working directory, so use an absolute path in schedulers.
 
 Use a dedicated new or empty local file ending in `.lock`; symlinks, nonempty files and history/SQLite-sidecar aliases are rejected. Parent directories are created if needed. The file stays in place and contains no PID or credentials; the OS lock is released when its holder closes or exits. Keep it in a trusted local directory and do not delete or replace it while invocations may be active. This coordinates cooperating CLI invocations, not other hosts or calls that omit the option.
+
+## List recorded datasets
+
+Discover labels already present in real drill history:
+
+```sh
+recovery-assurance datasets --db ./data/runs.db
+```
+
+The JSON list is sorted by exact label and contains `dataset`, `run_count`, `latest_run_id`, `latest_started_at` and `latest_status`. Counts include passed, failed and error records across the entire history, beyond the 200-row history page. Latest uses stored start time descending, then run ID descending for ties. Labels are case-sensitive and are not normalized.
+
+Only string labels without NUL and an explicit JSON `sample: false` marker count; unlabelled, synthetic and unmarked legacy records remain available through combined history. This is a read-only inventory of saved evidence, not a registry of configured profiles or a health assessment. Datasets without recorded real evidence are absent. Use `list --dataset LABEL` to inspect a grouping, `check` to assess freshness/outcome, or `export` with its recorded run ID.
+
+Readable empty history returns `[]` and exit **0**; recorded failures do not change the inventory command's exit code. Missing/unusable history returns **2** with stderr and no JSON. Missing paths are not created, existing history is not initialized or converted, and the same SQLite WAL access requirements as other read-only commands apply. See [dataset discovery](docs/datasets.md#discover-recorded-datasets).
 
 ## Check saved evidence for monitoring
 

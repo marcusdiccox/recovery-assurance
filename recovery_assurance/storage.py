@@ -112,6 +112,45 @@ class Store:
             rows = connection.execute(query, parameters).fetchall()
         return [json.loads(row[0]) for row in rows]
 
+    def dataset_inventory(self) -> "list[dict]":
+        """Summarize all real labelled evidence without the history page limit."""
+        inventory = {}
+        with self._connect() as connection:
+            for run_id, started_at, encoded in connection.execute(
+                "SELECT id, started_at, report FROM runs"
+            ):
+                if not isinstance(encoded, (str, bytes, bytearray)):
+                    raise ValueError("History contains an invalid report")
+                report = json.loads(encoded)
+                if not isinstance(report, dict):
+                    raise ValueError("History report must be an object")
+                dataset = report.get("dataset")
+                if (
+                    report.get("sample") is not False
+                    or not isinstance(dataset, str)
+                    or "\x00" in dataset
+                ):
+                    continue
+                if not isinstance(run_id, str) or not isinstance(started_at, str):
+                    raise ValueError("History contains invalid run ordering metadata")
+                if dataset not in inventory:
+                    inventory[dataset] = {
+                        "dataset": dataset,
+                        "run_count": 0,
+                        "latest_run_id": run_id,
+                        "latest_started_at": started_at,
+                        "latest_status": report.get("status"),
+                    }
+                item = inventory[dataset]
+                item["run_count"] += 1
+                if (started_at, run_id) > (item["latest_started_at"], item["latest_run_id"]):
+                    item.update(
+                        latest_run_id=run_id,
+                        latest_started_at=started_at,
+                        latest_status=report.get("status"),
+                    )
+        return [inventory[dataset] for dataset in sorted(inventory)]
+
     def latest_real_run(self, dataset: str) -> dict | None:
         """Find real evidence before limiting, using the same ordering as history."""
         with self._connect() as connection:

@@ -74,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_parser("demo", help="Execute three drills with synthetic files"),
         sub.add_parser("serve", help="Start the local dashboard"),
         sub.add_parser("list", help="Print the latest 200 evidence records"),
+        sub.add_parser("datasets", help="List datasets recorded by real drills"),
     ):
         command.add_argument("--db", type=Path, default=Path("data/runs.db"))
     serve = sub.choices["serve"]
@@ -112,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 print(json.dumps(report, indent=2))
                 return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
-        read_only = args.command in ("export", "backup-history", "check") or (
+        read_only = args.command in ("export", "backup-history", "check", "datasets") or (
             args.command == "list" and args.db.is_file()
         )
         if read_only and not args.db.is_file():
@@ -126,6 +127,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(seed_demo(store), indent=2))
         elif args.command == "list":
             print(json.dumps(store.list(dataset=args.dataset, before=args.before), indent=2))
+        elif args.command == "datasets":
+            print(json.dumps(store.dataset_inventory(), indent=2, allow_nan=False))
         elif args.command == "backup-history":
             store.backup_to(args.output)
             print("History backup created.")

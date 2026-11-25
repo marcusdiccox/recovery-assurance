@@ -10,6 +10,16 @@ recovery-assurance run ./datasets.local.json --dataset documents-directory --db 
 
 The command runs one selected dataset and prints the same JSON evidence as `drill`. Exit codes remain **0** for passed, **1** for failed integrity or time target, and **2** for a configuration or execution error. Unknown dataset names fail without falling back to another profile.
 
+## Discover recorded datasets
+
+```sh
+recovery-assurance datasets --db ./data/runs.db
+```
+
+This read-only command lists exact labels from all explicitly non-sample records, with counts and the latest stored run ID, start time and saved outcome. Passed, failed and error runs all count. It does not use the latest-200 display limit, configure profiles or infer whether a dataset is healthy. String labels remain case-sensitive, including distinct empty or Unicode labels; missing/invalid labels and records without explicit JSON `sample: false` are excluded. Profiles that have never produced real evidence are not discoverable from history alone.
+
+The reader decodes each report once, uses stored `(started_at, id)` columns to choose the latest entry, and retains one summary per label. Its JSON interpretation matches the existing report decoder rather than mixing SQL selection with a different decoded label. Missing/unreadable/invalid history returns exit 2 without initialization; a valid history with no eligible labels returns an empty JSON list and exit 0. The inventory is evidence metadata; use the [saved-evidence health check](../README.md#check-saved-evidence-for-monitoring) for a chosen label and age policy.
+
 ## Review a dataset's history
 
 Named-profile runs save the profile key in the report's `dataset` field, separately from its display name. This identity stays attached to passed, failed, and error records alongside the baseline fingerprint and resolved restic snapshot ID. The JSON and HTML exports include it.
