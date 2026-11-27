@@ -108,6 +108,14 @@ recovery-assurance check --dataset finance --max-age-hours 25 --db /var/lib/reco
 
 Use the corresponding Windows database path on Windows. For example, 25 hours permits an hour of margin beyond a daily schedule; choose your own limit. Exit 0 means the latest real record is passing and fresh, exit 1 means missing/stale/failed/error evidence, and exit 2 means the assessment could not be made. Capture the JSON `reasons` and run ID in private monitoring logs. Demo records do not count. This read-only probe assesses saved evidence, not scheduler launches or active jobs; a launch/configuration failure with no report is detected only after evidence becomes stale. It installs no monitor or alert destination. See the [complete check contract](../README.md#check-saved-evidence-for-monitoring) for ordering, timestamp and archive requirements.
 
+For a monitor covering several required workloads, repeat `--dataset` with `check-many`:
+
+```sh
+recovery-assurance check-many --dataset finance --dataset operations --max-age-hours 25 --db /var/lib/recovery-assurance/runs.db
+```
+
+Both labels must have fresh passing real evidence for exit 0. A never-recorded label is unhealthy, even when every discovered dataset is passing. The JSON `results` list retains each label's reasons and run ID; exit 1 means any valid unhealthy assessment, and exit 2 means an assessment could not complete with no partial success JSON. Use an explicit expected set and protect these logs. The checks are sequential/live, not a shared database snapshot; this command does not configure monitoring or delivery.
+
 ## Validation scope
 
 On November 15, 2026, Windows action/settings objects were constructed locally, and the equivalent direct process invocation was exercised with synthetic data, absolute config/database paths containing spaces and a different working directory. Exit codes 0/1/2 were observed, with two completed records persisted for the successful and integrity-failed drills.

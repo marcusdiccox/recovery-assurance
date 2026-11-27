@@ -63,7 +63,7 @@ The `directory` backend copies the snapshot into a fresh temporary directory, ve
 | `2` | Configuration, restore, verification, or command error |
 | `75` | Requested drill lock is held; this invocation skipped without starting a drill |
 
-`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, check, demo, list, datasets, export, backup-history, and serve commands to select another database.
+`recovery-assurance list` prints the latest 200 records by default. Continue with `list --before LAST_RUN_ID`, using the final record's `id` from the previous page, until an empty list is returned. Keep the same `--dataset` filter when paging; see [history traversal](docs/datasets.md#review-a-datasets-history). Use `--db ./data/custom.db` on drill, run, check, check-many, demo, list, datasets, export, backup-history, and serve commands to select another database.
 
 Listing an existing history file uses read-only access, including filtered and paged reads. Prepared write-protected archives can be inspected without changing their schema or journal mode. A missing history path retains first-use setup: it creates an empty database and prints `[]`. An existing empty or unrelated file returns exit code **2** instead of being initialized as history.
 
@@ -112,6 +112,16 @@ Choose a finite positive age limit for your own schedule; 25 hours is an example
 Selection uses the exact dataset label and requires JSON `sample: false`; synthetic demos and records without that explicit marker do not count. Filtering happens before selecting one row, so unrelated or sample activity cannot hide real evidence. The newest run is determined by stored start time descending, then run ID descending, as in history. A newer failure/error is not replaced by an older success. Age uses timezone-aware `finished_at`; exactly the age limit is still fresh. Reversed, future or missing timestamps, contradictory passing flags and decoded dataset/sample metadata that disagrees with selection return **2**, rather than healthy evidence. Keep host clocks synchronized.
 
 Existing history is opened read-only without initialization or journal conversion; a missing path is an error and is not created. SQLite WAL sidecar/access requirements still apply. This checks recorded evidence, not whether a scheduler launched, whether a drill is currently running, backup freshness/RPO or application recovery. An attempt that produced no evidence is only detectable here once saved evidence exceeds the chosen age limit. No alerts or monitoring service are installed; a host monitoring script can consume the exit code and JSON.
+
+To require several datasets in one monitoring probe, supply each expected label explicitly:
+
+```sh
+recovery-assurance check-many --dataset finance --dataset operations --max-age-hours 25 --db ./data/runs.db
+```
+
+Its JSON contains `schema_version: 1`, combined `healthy`, `max_age_hours` and a `results` list of ordinary single-dataset assessments. Exact duplicate labels are checked once, in first-occurrence order; case remains significant. Exit **0** requires every supplied label to be healthy. Exit **1** means at least one valid assessment is unhealthy, including a label with no real evidence. Exit **2** means any assessment could not be completed; no partial JSON success is printed. An empty API selection is rejected. The existing `check` command and JSON format are unchanged.
+
+Choose the required labels from your operational policy; automatically selecting only discovered datasets would miss workloads that have never produced evidence. Checks read live history sequentially, without a single cross-dataset snapshot. This does not install a scheduler, registry or alert service, and retains the single-check timestamp, sample and archive requirements.
 
 ## Export saved evidence from the CLI
 

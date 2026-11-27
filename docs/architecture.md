@@ -24,7 +24,7 @@ flowchart LR
 | `cli.py` | Capture, direct/profile drills, saved-evidence health checks, list, export, history backup, demo, and loopback server commands |
 | `config.py` | Versioned named profiles, strict field validation, and config-relative local paths |
 | `locking.py` | Optional nonblocking local drill coordination with a persistent empty lock file |
-| `health.py` | Freshness/outcome assessment of the latest real dataset evidence for CLI monitoring |
+| `health.py` | Freshness and outcome assessment for one or several explicitly required datasets |
 | `web.py` | Read APIs, local sample drill action, report downloads, static assets |
 | `reports.py` | Escaped, self-contained HTML evidence |
 | `static/` | Dependency-free dashboard, accessible controls, native dialogs, SVG chart |
@@ -48,6 +48,8 @@ flowchart LR
 **A boring local stack.** Python, FastAPI, SQLite, and plain JavaScript keep the first version easy to run and inspect. SQLite uses per-operation connections and WAL. There is no frontend build service or third-party analytics.
 
 **Read-only monitoring.** CLI `check` uses an existing read-only Store and `latest_real_run(dataset)`. A bound exact dataset predicate and JSON `sample:false` predicate precede `LIMIT 1`; start-time/ID ordering matches history. `check_health` evaluates the chosen record's outcome and completion age against an explicit positive policy. Missing evidence, stale evidence and latest failed/error runs produce unhealthy JSON/exit 1. Invalid policy/history or unusable timestamp/outcome metadata produces exit 2. No previous passing fallback, restore, row write, scheduler state, alert delivery or schema migration is involved.
+
+`check_datasets` and CLI `check-many` apply that assessment to an explicit nonempty list of required labels. Exact duplicates are removed in first-occurrence order before lookup. Combined health requires every distinct label to pass, including labels absent from recorded inventory. Errors propagate before any aggregate JSON is printed; the old single-check format stays unchanged. Lookups remain sequential/live, without a shared cross-dataset snapshot or discovered-set inference.
 
 **Narrow browser authority.** Real filesystem paths and backup credentials are not browser inputs. The demo mutation requires an explicit header and same-origin requests. Trusted hosts and a restrictive dashboard CSP reduce exposure; these controls do not replace authentication for a future hosted service.
 

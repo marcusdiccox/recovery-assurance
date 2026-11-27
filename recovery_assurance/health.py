@@ -70,3 +70,23 @@ def check_health(
         age_hours=age_hours,
     )
     return result
+
+
+def check_datasets(store: Store, *, datasets: list[str], max_age_hours: float) -> dict:
+    """Assess every explicitly required label; an empty selection cannot pass."""
+    if (
+        not isinstance(datasets, list)
+        or not datasets
+        or any(not isinstance(dataset, str) or "\x00" in dataset for dataset in datasets)
+    ):
+        raise ValueError("Provide at least one valid dataset label")
+    results = [
+        check_health(store, dataset=dataset, max_age_hours=max_age_hours)
+        for dataset in dict.fromkeys(datasets)
+    ]
+    return {
+        "schema_version": 1,
+        "healthy": all(result["healthy"] for result in results),
+        "max_age_hours": max_age_hours,
+        "results": results,
+    }

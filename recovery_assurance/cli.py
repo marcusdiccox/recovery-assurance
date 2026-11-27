@@ -9,7 +9,7 @@ from pathlib import Path
 from .config import load_dataset
 from .core import capture, load_manifest, run_drill, save_manifest
 from .demo import seed_demo
-from .health import check_health
+from .health import check_datasets, check_health
 from .locking import DrillLockBusy, drill_lock
 from .reports import html_report
 from .storage import Store
@@ -49,6 +49,17 @@ def main(argv: list[str] | None = None) -> int:
     health.add_argument(
         "--max-age-hours", required=True, type=float, help="Positive maximum age since completion"
     )
+    multi_health = sub.add_parser("check-many", help="Check every explicitly required dataset")
+    multi_health.add_argument(
+        "--dataset",
+        dest="datasets",
+        action="append",
+        required=True,
+        help="Exact required dataset label; repeat for each dataset",
+    )
+    multi_health.add_argument(
+        "--max-age-hours", required=True, type=float, help="Positive maximum age since completion"
+    )
     for command in (drill, configured):
         command.add_argument(
             "--lock-file",
@@ -69,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
         drill,
         configured,
         health,
+        multi_health,
         exporter,
         history_backup,
         sub.add_parser("demo", help="Execute three drills with synthetic files"),
@@ -113,14 +125,22 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 print(json.dumps(report, indent=2))
                 return {"passed": 0, "failed": 1, "error": 2}[report["status"]]
-        read_only = args.command in ("export", "backup-history", "check", "datasets") or (
-            args.command == "list" and args.db.is_file()
-        )
+        read_only = args.command in (
+            "export",
+            "backup-history",
+            "check",
+            "check-many",
+            "datasets",
+        ) or (args.command == "list" and args.db.is_file())
         if read_only and not args.db.is_file():
             raise ValueError("Database does not exist; select an existing history with --db")
         store = Store(args.db, read_only=read_only)
         if args.command == "check":
             result = check_health(store, dataset=args.dataset, max_age_hours=args.max_age_hours)
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result["healthy"] else 1
+        if args.command == "check-many":
+            result = check_datasets(store, datasets=args.datasets, max_age_hours=args.max_age_hours)
             print(json.dumps(result, indent=2, allow_nan=False))
             return 0 if result["healthy"] else 1
         if args.command == "demo":

@@ -18,6 +18,8 @@ Direct/profile CLI drills now optionally share a local OS lock with `--lock-file
 
 Saved-evidence health checks now assess the latest real run for an exact dataset against a caller-chosen age limit. JSON and exit codes support host monitoring scripts; scheduler state and alert delivery remain separate work.
 
+An explicit multi-dataset probe can require every selected workload to have fresh passing evidence, including labels that have never produced a real record. It preserves per-dataset assessments and the existing single-check format.
+
 A read-only recorded-dataset inventory now exposes exact labels, full-history run counts and latest saved outcomes for operational discovery. These remain local history groupings, not registered identities or configured-profile inventory.
 
 ## Next — make evidence operational
