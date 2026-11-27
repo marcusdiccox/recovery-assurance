@@ -20,6 +20,8 @@ Saved-evidence health checks now assess the latest real run for an exact dataset
 
 An explicit multi-dataset probe can require every selected workload to have fresh passing evidence, including labels that have never produced a real record. It preserves per-dataset assessments and the existing single-check format.
 
+Single-dataset health checks can also require the latest real run to match an operator-supplied baseline manifest, preventing a fresh pass against another baseline from satisfying that policy. This compares recorded fingerprints; a registered baseline-to-snapshot catalog remains future work.
+
 A read-only recorded-dataset inventory now exposes exact labels, full-history run counts and latest saved outcomes for operational discovery. These remain local history groupings, not registered identities or configured-profile inventory.
 
 ## Next — make evidence operational

@@ -49,6 +49,9 @@ def main(argv: list[str] | None = None) -> int:
     health.add_argument(
         "--max-age-hours", required=True, type=float, help="Positive maximum age since completion"
     )
+    health.add_argument(
+        "--manifest", type=Path, help="Also require evidence for this exact baseline manifest"
+    )
     multi_health = sub.add_parser("check-many", help="Check every explicitly required dataset")
     multi_health.add_argument(
         "--dataset",
@@ -136,7 +139,14 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("Database does not exist; select an existing history with --db")
         store = Store(args.db, read_only=read_only)
         if args.command == "check":
-            result = check_health(store, dataset=args.dataset, max_age_hours=args.max_age_hours)
+            result = check_health(
+                store,
+                dataset=args.dataset,
+                max_age_hours=args.max_age_hours,
+                expected_manifest=load_manifest(args.manifest)
+                if args.manifest is not None
+                else None,
+            )
             print(json.dumps(result, indent=2, allow_nan=False))
             return 0 if result["healthy"] else 1
         if args.command == "check-many":

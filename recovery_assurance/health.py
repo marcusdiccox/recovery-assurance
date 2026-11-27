@@ -1,8 +1,10 @@
 """Read saved evidence for monitoring without running another restore."""
 
 import math
+import re
 from datetime import UTC, datetime
 
+from .core import manifest_fingerprint
 from .storage import Store
 
 
@@ -19,11 +21,19 @@ def _recorded_time(value) -> datetime:
 
 
 def check_health(
-    store: Store, *, dataset: str, max_age_hours: float, now: datetime | None = None
+    store: Store,
+    *,
+    dataset: str,
+    max_age_hours: float,
+    now: datetime | None = None,
+    expected_manifest: dict | None = None,
 ) -> dict:
     """Assess the latest real run; the caller chooses the freshness policy."""
     if not math.isfinite(max_age_hours) or max_age_hours <= 0:
         raise ValueError("Maximum evidence age must be finite and positive")
+    expected_fingerprint = (
+        manifest_fingerprint(expected_manifest) if expected_manifest is not None else None
+    )
     result = {
         "schema_version": 1,
         "dataset": dataset,
@@ -35,6 +45,8 @@ def check_health(
         "finished_at": None,
         "age_hours": None,
     }
+    if expected_fingerprint is not None:
+        result.update(expected_baseline_sha256=expected_fingerprint, baseline_sha256=None)
     report = store.latest_real_run(dataset)
     if report is None:
         result["reasons"].append("no_evidence")
@@ -62,6 +74,13 @@ def check_health(
         result["reasons"].append("stale")
     if status != "passed":
         result["reasons"].append(f"latest_run_{status}")
+    if expected_fingerprint is not None:
+        fingerprint = report.get("baseline_sha256")
+        if not isinstance(fingerprint, str) or not re.fullmatch(r"[0-9a-f]{64}", fingerprint):
+            raise ValueError("Latest run needs a valid baseline fingerprint")
+        result["baseline_sha256"] = fingerprint
+        if fingerprint != expected_fingerprint:
+            result["reasons"].append("baseline_mismatch")
     result.update(
         healthy=not result["reasons"],
         run_id=report["id"],

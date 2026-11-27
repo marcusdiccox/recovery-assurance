@@ -113,6 +113,18 @@ Selection uses the exact dataset label and requires JSON `sample: false`; synthe
 
 Existing history is opened read-only without initialization or journal conversion; a missing path is an error and is not created. SQLite WAL sidecar/access requirements still apply. This checks recorded evidence, not whether a scheduler launched, whether a drill is currently running, backup freshness/RPO or application recovery. An attempt that produced no evidence is only detectable here once saved evidence exceeds the chosen age limit. No alerts or monitoring service are installed; a host monitoring script can consume the exit code and JSON.
 
+To also require evidence for a particular baseline, pass its manifest:
+
+```sh
+recovery-assurance check --dataset finance --max-age-hours 25 --manifest ./baseline.json --db ./data/runs.db
+```
+
+The check reads and validates the manifest, then compares its canonical SHA-256 with the latest real run's `baseline_sha256`. A different valid fingerprint adds `baseline_mismatch` and returns **1**, even when that run is fresh and passed. It does not search for an older matching run. Age and outcome requirements still apply, and absent real evidence remains `no_evidence`.
+
+With `--manifest`, JSON also includes `expected_baseline_sha256` and the recorded `baseline_sha256` (null without evidence). A missing or malformed recorded fingerprint, or an unreadable/invalid manifest, returns **2** with stderr and no JSON. Without the option, the existing assessment and JSON fields are unchanged, including support for legacy evidence without a fingerprint.
+
+The fingerprint covers the entire parsed manifest, including `created_at` and annotations; JSON whitespace, key order and a UTF-8 BOM do not affect it. Supply the saved baseline revision you expect, rather than capturing a new one for each probe. Relative manifest paths use the working directory; use an absolute path in monitoring jobs. Neither the baseline nor history is modified, and no restore is performed. This compares saved metadata, which is not signed; it does not authenticate an editable archive or verify that the backup still exists. The option applies to single-dataset `check`; use a separate check for each dataset that needs its own baseline policy.
+
 To require several datasets in one monitoring probe, supply each expected label explicitly:
 
 ```sh

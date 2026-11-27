@@ -140,6 +140,14 @@ def load_manifest(path: Path) -> dict:
     return manifest
 
 
+def manifest_fingerprint(manifest: dict) -> str:
+    """Hash the validated full baseline, independent of JSON presentation."""
+    _validate(manifest)
+    return hashlib.sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
 def compare(manifest: dict, restored: Path) -> dict:
     _validate(manifest)
     restored = Path(restored)
@@ -225,7 +233,7 @@ def run_drill(
     dataset: str | None = None,
 ) -> dict:
     """RTO covers restore + integrity verification, excluding report persistence."""
-    _validate(manifest)
+    baseline_sha256 = manifest_fingerprint(manifest)
     if dataset is not None and (not isinstance(dataset, str) or "\x00" in dataset):
         raise ValueError("Dataset must be a string without NUL characters")
     if not math.isfinite(rto_seconds) or rto_seconds < 0:
@@ -247,9 +255,7 @@ def run_drill(
         "backend": backend,
         "sample": sample,
         "baseline_created_at": manifest.get("created_at"),
-        "baseline_sha256": hashlib.sha256(
-            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest(),
+        "baseline_sha256": baseline_sha256,
         "snapshot": snapshot.split(":", 1)[0] if backend == "restic" else None,
         "resolved_snapshot": None,
         "rto_seconds": rto_seconds,
